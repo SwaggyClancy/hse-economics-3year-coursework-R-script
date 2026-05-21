@@ -1,0 +1,311 @@
+# ==============================================================================
+# АНАЛИЗ ДИНАМИКИ ЦЕН НА ПРОДУКТОВОМ РЫНКЕ РФ
+# Пятёрочка vs Магнит — панельный анализ ценовой жёсткости
+#
+# Авторы: Абдуазизов, Андреасян, Андреев
+# Версия: 2026-04
+# ==============================================================================
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = "C:/Clancy/Программирование/projects/hse-economics-3year-coursework-R-script")
+
+message("✅ knitr root.dir установлен на корень проекта")
+
+```
+
+
+
+```{r}
+# ── Загрузка библиотек ────────────────────────────────────────────────────────
+library(tidyverse)
+library(readxl)
+library(gt)
+library(gtExtras)
+library(officer)
+library(fixest)
+library(lmtest)
+library(sandwich)
+library(cluster)
+library(factoextra)
+library(scales)
+library(glue)
+library(here)
+
+```
+
+```{r}
+# ── Глобальные параметры ──────────────────────────────────────────────────────
+CHANGE_THRESHOLD <- 0.01
+SHEET_NAME       <- "Combined"
+
+PATH_RAW      <- file.path(getwd(), "data", "raw")
+PATH_PROCESSED <- file.path(getwd(), "data", "processed")
+PATH_TABLES   <- file.path(getwd(), "output", "tables")
+PATH_PLOTS    <- file.path(getwd(), "output", "plots")
+
+# Диагностика
+message("=== ПУТИ ПОСЛЕ ИСПРАВЛЕНИЯ ===")
+message("Working directory : ", getwd())
+message("PATH_RAW          : ", PATH_RAW)
+message("PATH_PROCESSED    : ", PATH_PROCESSED)
+message("PATH_TABLES       : ", PATH_TABLES)
+message("PATH_PLOTS        : ", PATH_PLOTS)
+message("Содержимое raw/:")
+print(list.files(PATH_RAW, pattern = "\\.xlsx$", full.names = FALSE))
+# ── Цветовая палитра и тема ───────────────────────────────────────────────────
+CHAIN_COLOURS <- c("Pyaterochka" = "#E63329", "Magnit" = "#E91E8C")
+
+theme_price <- function() {
+  theme_minimal(base_size = 12) +
+    theme(
+      plot.title = element_text(face = "bold", size = 14),
+      plot.subtitle = element_text(colour = "grey40"),
+      legend.position = "bottom",
+      panel.grid.minor = element_blank(),
+      strip.text = element_text(face = "bold")
+    )
+}
+theme_set(theme_price())
+
+```
+
+```{r}
+# ================== 01. LOAD AND CLEAN ==========================================
+message("\n[01] === ЗАПУСК ЗАГРУЗКИ И ОЧИСТКИ ДАННЫХ ===")
+
+# ── 1.1 Поиск файлов ──────────────────────────────────────────────────────────
+message("\n[01] === ЗАПУСК ЗАГРУЗКИ И ОЧИСТКИ ДАННЫХ ===")
+message("1.1 Поиск xlsx-файлов...")
+
+xlsx_files <- list.files(
+  path       = PATH_RAW,
+  pattern    = "^combined_full_.*\\.xlsx$",
+  full.names = TRUE,
+  ignore.case = TRUE
+)
+
+message(glue("   Найдено файлов: {length(xlsx_files)}"))
+
+if (length(xlsx_files) == 0) {
+  stop(glue("❌ Файлы не найдены в {PATH_RAW}"))
+} else {
+  message(paste("   →", basename(xlsx_files), collapse = "\n"))
+}
+
+```
+
+```{r}
+
+# ── 1.2 Чтение всех файлов + унификация колонок ─────────────────────────────
+message("1.2 Чтение Excel-файлов и унификация названий колонок...")
+
+read_price_file <- function(path) {
+  df <- read_excel(path, sheet = SHEET_NAME, col_types = "text")
+  df$source_file <- basename(path)
+  
+  # Унификация названий колонок (самое важное!)
+  df <- df %>%
+    rename_with(~ case_when(
+      .x == "store_cha"      ~ "store_chain",
+      .x == "store_cod"      ~ "store_code", 
+      .x == "price_regul"    ~ "price_regular",
+      .x == "price_reg"      ~ "price_regular",   # возможные варианты
+      .x == "price_disc"     ~ "price_discount",
+      .x == "price_dis"      ~ "price_discount",
+      TRUE                   ~ .x
+    ), .cols = everything())
+  
+  # Приводим store_chain к единому виду
+  if ("store_chain" %in% names(df)) {
+    df <- df %>% mutate(store_chain = case_when(
+      str_detect(store_chain, regex("пят|pyat|5ka|pyater", ignore_case = TRUE)) ~ "Pyaterochka",
+      str_detect(store_chain, regex("магн|magnit", ignore_case = TRUE)) ~ "Magnit",
+      TRUE ~ store_chain
+    ))
+  }
+  
+  df
+}
+
+raw <- map_dfr(xlsx_files, read_price_file)
+
+message(glue("Загружено строк: {nrow(raw)} | Колонок: {ncol(raw)}"))
+message("Колонки после унификации:")
+print(colnames(raw))
+
+```
+
+```{r}
+# ── 1.3 Приведение типов + ключевые переменные ───────────────────────────────
+message("1.3 Приведение типов + создание effective_price и is_promo...")
+
+parse_price <- function(x) {
+  if (is.null(x) || length(x) == 0) return(NA_real_)
+  
+  x_orig <- as.character(x)
+  
+  # Максимально мягкая очистка
+  x <- x_orig %>%
+    str_replace_all("[^0-9,.-]", "") %>%      # оставляем только цифры + , . -
+    str_replace_all(",", ".") %>%             # запятая в точку
+    str_trim()
+  
+  # Убираем пустые и некорректные
+  x <- ifelse(x == "" | str_detect(x, "^\\.$|^\\.$"), NA_character_, x)
+  x <- ifelse(str_detect(x, "^[0-9]"), x, NA_character_)
+  
+  num <- as.numeric(x)
+  
+  # Диагностика (показываем только проблемные)
+  bad <- which(is.na(num) & !is.na(x_orig))
+  if (length(bad) > 0 && length(bad) < 30) {
+    message("⚠️  Проблемные значения price_regular (первые 20):")
+    print(data.frame(original = x_orig[bad[1:min(20, length(bad))]], 
+                     cleaned = x[bad[1:min(20, length(bad))]]))
+  }
+  
+  num
+}
+
+# === ДИАГНОСТИКА ПЕРЕД МУТАЦИЕЙ ===
+message("Диагностика цен до парсинга (первые 30 regular):")
+print(head(raw$price_regular, 30))
+
+panel <- raw %>%
+  filter(!is.na(store_chain), 
+         !is.na(product_id), 
+         !is.na(date)) %>%
+  mutate(
+    date = as.Date(date),
+    
+    price_regular  = parse_price(price_regular),
+    price_discount = parse_price(price_discount),
+    
+    across(c(category_id, store_code, product_id, store_chain), as.character),
+    
+    effective_price = coalesce(
+      if_else(!is.na(price_discount) & price_discount < price_regular & price_discount > 0,
+              price_discount, NA_real_),
+      price_regular
+    ),
+    
+    is_promo = !is.na(price_discount) & price_discount < price_regular & price_discount > 0,
+    week = floor_date(date, "week", week_start = 1)
+  ) %>%
+  filter(price_regular > 0, effective_price > 0)
+
+message(glue("✅ Строк после очистки: {nrow(panel)}"))
+message(glue("   Уникальных товаров: {n_distinct(panel$product_id)}"))
+message(glue("   NA в price_regular: {sum(is.na(panel$price_regular))}"))
+
+```
+
+```{r}
+# ── 1.4 Удаление дублей + финальная подготовка ───────────────────────────────
+message("1.4 Удаление дублей и сортировка...")
+
+panel <- panel %>%
+  # Удаляем полные дубли (на всякий случай)
+  distinct(store_chain, store_code, product_id, date, .keep_all = TRUE) %>%
+  arrange(store_chain, store_code, product_id, date)
+
+message(glue("Строк после удаления дублей: {nrow(panel)}"))
+
+
+```
+
+```{r}
+# ── 1.5 Лаги, изменения цен и спеллы ───────────────────────────────────────
+message("1.5 Расчёт лагов, изменений и спеллов...")
+
+panel <- panel %>%
+  group_by(store_chain, store_code, product_id) %>%
+  mutate(
+    lag_regular     = lag(price_regular),
+    lag_effective   = lag(effective_price),
+    
+    delta_regular_pct   = (price_regular - lag_regular) / lag_regular,
+    delta_effective_pct = (effective_price - lag_effective) / lag_effective,
+    
+    changed_regular   = !is.na(delta_regular_pct) & abs(delta_regular_pct) > CHANGE_THRESHOLD,
+    changed_effective = !is.na(delta_effective_pct) & abs(delta_effective_pct) > CHANGE_THRESHOLD,
+    
+    # Новое событие изменения = изменение effective цены или первый день
+    price_change_event = changed_effective | is.na(lag_effective),
+    spell_id           = cumsum(price_change_event)
+  ) %>%
+  ungroup()
+
+
+
+```
+
+```{r}
+# ── 1.6 Длительность спеллов ───────────────────────────────────────────────
+message("1.6 Расчёт длительности спеллов...")
+
+spell_lengths <- panel %>%
+  group_by(store_chain, store_code, product_id, spell_id) %>%
+  summarise(
+    spell_length_weeks = n(),
+    spell_start_date   = min(date),
+    spell_end_date     = max(date),
+    .groups = "drop"
+  )
+
+panel <- panel %>%
+  left_join(spell_lengths, 
+            by = c("store_chain", "store_code", "product_id", "spell_id"))
+
+
+```
+
+```{r}
+# ── 1.7 Дополнительные полезные переменные ────────────────────────────────
+panel <- panel %>%
+  mutate(
+    log_price = log(effective_price),
+    year_month = format(date, "%Y-%m")
+  )
+
+
+```
+
+
+```{r}
+# ── 1.8 Сохранение ───────────────────────────────────────────────────────
+message("1.8 Сохранение очищенной панели...")
+
+saveRDS(panel, file.path(PATH_PROCESSED, "price_panel.rds"))
+write_csv(panel, file.path(PATH_PROCESSED, "price_panel.csv"), na = "")
+
+message(glue("✅ ГОТОВО! Сохранена панель: {nrow(panel)} строк"))
+message(glue("   Уникальных товаров: {n_distinct(panel$product_id)}"))
+message(glue("   Уникальных магазинов: {n_distinct(panel$store_code)}"))
+message(glue("   Период: {min(panel$date)} — {max(panel$date)}"))
+
+
+```
+
+
+```{r}
+# ── Финальное резюме ─────────────────────────────────────────────────────
+message("\n", strrep("=", 80))
+message("                  ЗАГРУЗКА И ОЧИСТКА УСПЕШНО ЗАВЕРШЕНА")
+message(strrep("=", 80))
+message(glue("
+  Файлов обработано          : {length(xlsx_files)}
+  Строк в итоговой панели    : {nrow(panel)}
+  Уникальных товаров         : {n_distinct(panel$product_id)}
+  Магазинов                  : {n_distinct(panel$store_code)}
+  Категорий                  : {n_distinct(panel$category_id)}
+  Сетей                      : {n_distinct(panel$store_chain)}
+  Период                     : {min(panel$date)} — {max(panel$date)}
+"))
+
+```
+
+
+
+
+
