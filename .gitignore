@@ -1,35 +1,36 @@
-# ================== Игнорируем большие/генерируемые данные ==================
+# =============================================
+# .gitignore — только скрипты
+# =============================================
+
+# Игнорируем все данные и результаты
 data/processed/*
 data/raw/*
 output/plots/*
 output/tables/*
 
-# Сохраняем структуру папок
+# Сохраняем структуру пустых папок
 !data/processed/.gitkeep
 !data/raw/.gitkeep
 !output/plots/.gitkeep
 !output/tables/.gitkeep
 
-# ================== R-specific ==================
+# R временные файлы
 .Rhistory
 .RData
 .RDataTmp
 *.rds
 *.Rproj
 .Rproj.user/
+
+# Дополнительно
 renv/library/
 renv/python/
 .cache/
 
-# ================== Временные и служебные файлы ==================
+# Мусор
 *.log
 *.tmp
 *.bak
 __pycache__/
 .DS_Store
 Thumbs.db
-
-# ================== На будущее, если потребуется что-то оставить, раскоментировать ==================
-# !data/raw/combined_full_2026-*.xlsx     # раскомментируй, если хочешь коммитить raw
-# !output/tables/*.html                   # красивые html-таблицы
-# !output/tables/01_*.csv
