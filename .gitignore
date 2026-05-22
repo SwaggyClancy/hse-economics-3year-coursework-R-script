@@ -1,0 +1,35 @@
+# ================== Игнорируем большие/генерируемые данные ==================
+data/processed/*
+data/raw/*
+output/plots/*
+output/tables/*
+
+# Сохраняем структуру папок
+!data/processed/.gitkeep
+!data/raw/.gitkeep
+!output/plots/.gitkeep
+!output/tables/.gitkeep
+
+# ================== R-specific ==================
+.Rhistory
+.RData
+.RDataTmp
+*.rds
+*.Rproj
+.Rproj.user/
+renv/library/
+renv/python/
+.cache/
+
+# ================== Временные и служебные файлы ==================
+*.log
+*.tmp
+*.bak
+__pycache__/
+.DS_Store
+Thumbs.db
+
+# ================== На будущее, если потребуется что-то оставить, раскоментировать ==================
+# !data/raw/combined_full_2026-*.xlsx     # раскомментируй, если хочешь коммитить raw
+# !output/tables/*.html                   # красивые html-таблицы
+# !output/tables/01_*.csv
