@@ -3,28 +3,36 @@
 message("\n[05] Кластеризация категорий...")
 
 # ── 5.1 Матрица признаков для кластеризации ───────────────────────────────────
-# Агрегируем по всем сетям вместе (чтобы не зависеть от coverage одной сети)
+# ЧТО ТЕСТИРУЕМ: типология категорий по характеру ценовой динамики.
+# Гипотеза: категории разбиваются на группы с принципиально разными ценовыми
+# стратегиями (например, "акционные" vs "стабильные" vs "волатильные").
+# Агрегируем по обеим сетям вместе через category_name — чтобы каждая категория
+# имела одну строку с усреднёнными характеристиками независимо от сети.
+# Признаки: freq_effective, avg_change_effective, promo_share, volatility, avg_spell.
 
 cluster_features <- stickiness %>%
-  group_by(category_id) %>%
+  group_by(category_name) %>%   # category_name — единый ключ для обеих сетей
   summarise(
-    freq_effective     = weighted.mean(freq_effective,     w = n_obs, na.rm = TRUE),
-    avg_size_effective = weighted.mean(avg_size_effective, w = n_obs, na.rm = TRUE),
-    promo_share        = weighted.mean(promo_share,        w = n_obs, na.rm = TRUE),
-    volatility         = weighted.mean(volatility_effective, w = n_obs, na.rm = TRUE),
-    avg_spell          = weighted.mean(avg_spell_length,   w = n_obs, na.rm = TRUE),
+    freq_effective       = weighted.mean(freq_effective,       w = n_obs, na.rm = TRUE),
+    avg_change_effective = weighted.mean(avg_change_effective, w = n_obs, na.rm = TRUE),
+    promo_share          = weighted.mean(promo_share,          w = n_obs, na.rm = TRUE),
+    volatility           = weighted.mean(volatility_effective, w = n_obs, na.rm = TRUE),
+    avg_spell            = weighted.mean(avg_spell_length,     w = n_obs, na.rm = TRUE),
     .groups = "drop"
   ) %>%
-  filter(complete.cases(.))  # только категории без NA во всех признаках
+  filter(complete.cases(.))
 
 # Матрица: только числовые признаки, стандартизируем
 feat_matrix <- cluster_features %>%
-  select(freq_effective, avg_size_effective, promo_share, volatility, avg_spell) %>%
-  scale()   # z-score стандартизация
+  select(freq_effective, avg_change_effective, promo_share, volatility, avg_spell) %>%
+  scale()
 
-rownames(feat_matrix) <- cluster_features$category_id
+rownames(feat_matrix) <- cluster_features$category_name   # читаемые подписи
 
 # ── 5.2 Выбор оптимального числа кластеров (silhouette) ──────────────────────
+# ЧТО ТЕСТИРУЕМ: при каком k кластеры наиболее "плотные" внутри и далёкие друг от друга?
+# Silhouette score от -1 до 1: чем выше, тем лучше разделены кластеры.
+# Оптимальный k — максимум на графике 07_silhouette_scores.png.
 k_range <- 2:min(N_CLUSTERS + 2, nrow(feat_matrix) - 1)
 
 silhouette_scores <- map_dbl(k_range, function(k) {
@@ -52,6 +60,9 @@ ggsave(file.path(PATH_PLOTS, "07_silhouette_scores.png"),
        p_sil, width = 7, height = 5, dpi = 150)
 
 # ── 5.3 Финальная кластеризация ───────────────────────────────────────────────
+# Центроиды кластеров показывают "портрет" каждой группы категорий.
+# Читать так: кластер с высоким promo_share и коротким avg_spell — "акционные"
+# категории; кластер с низким freq и длинным spell — "жёсткие" цены.
 set.seed(42)
 km_final <- kmeans(feat_matrix, centers = best_k, nstart = 50, iter.max = 200)
 
@@ -64,11 +75,11 @@ cluster_centroids <- cluster_features %>%
   summarise(
     n_cat              = n(),
     freq_effective     = mean(freq_effective),
-    avg_size_effective = mean(avg_size_effective),
+    avg_change_effective = mean(avg_change_effective),
     promo_share        = mean(promo_share),
     volatility         = mean(volatility),
     avg_spell          = mean(avg_spell),
-    categories         = paste(category_id, collapse = ", "),
+    categories         = paste(category_name, collapse = ", "),
     .groups = "drop"
   )
 
@@ -83,12 +94,12 @@ gt_clusters <- cluster_centroids %>%
   cols_label(
     n_cat              = "Категорий",
     freq_effective     = "Частота изменений",
-    avg_size_effective = "Ср. размер ΔP",
+    avg_change_effective = "Ср. размер ΔP",
     promo_share        = "Доля акций",
     volatility         = "Волатильность",
     avg_spell          = "Ср. длина спелла"
   ) %>%
-  fmt_percent(columns = c(freq_effective, avg_size_effective,
+  fmt_percent(columns = c(freq_effective, avg_change_effective,
                            promo_share, volatility),
               decimals = 1) %>%
   fmt_number(columns = avg_spell, decimals = 1) %>%
@@ -98,7 +109,7 @@ gt_clusters <- cluster_centroids %>%
 save_gt_table(gt_clusters, cluster_centroids, "07_cluster_centroids")
 
 # Таблица: какие категории в каких кластерах
-write_csv(cluster_features %>% select(category_id, cluster, everything()),
+write_csv(cluster_features %>% select(category_name, cluster, everything()),
           file.path(PATH_TABLES, "08_category_cluster_assignment.csv"))
 
 # ── 5.4 Визуализация кластеров (PCA-биплот) ───────────────────────────────────

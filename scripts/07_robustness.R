@@ -3,18 +3,24 @@
 message("\n[07] Проверки устойчивости...")
 
 # ── 7.1 Robustness 1: Только регулярные цены (без промо) ──────────────────────
+# ЧТО ТЕСТИРУЕМ (RC1): сохраняется ли эффект Магнита, если убрать промо из анализа?
+# Если β(is_magnit) значим и в основной модели (effective price), и здесь
+# (regular price) — разница между сетями не объясняется только промо-акциями.
+# Используем category_name (не category_id!) как FE — иначе is_magnit поглощается
+# (каждый category_id принадлежит только одной сети → perfect collinearity).
 message("  [RC-1] Только регулярные цены...")
 
 reg_data_regular <- panel %>%
+  left_join(cat_group_map, by = "category_id") %>%   # cat_group_map из script 06
   filter(!is.na(delta_regular_pct)) %>%
   mutate(
     dln_regular = log(price_regular / lag_regular),
     is_magnit   = as.integer(store_chain == "Magnit"),
     week_fct    = factor(week),
-    cat_fct     = factor(category_id),
+    cat_fct     = factor(cat_group),   # кросс-цепочечный ключ (как в script 06)
     store_fct   = factor(store_code)
   ) %>%
-  filter(is.finite(dln_regular))
+  filter(is.finite(dln_regular), !is.na(cat_fct))
 
 m_rc1 <- feols(
   dln_regular ~ is_magnit | cat_fct + week_fct,
@@ -23,22 +29,28 @@ m_rc1 <- feols(
 )
 
 # ── 7.2 Robustness 2: Другой порог изменения (0.5%) ───────────────────────────
+# ЧТО ТЕСТИРУЕМ (RC2): чувствительны ли результаты к выбору порога "значимого изменения"?
+# Основная модель использует порог 1% (CHANGE_THRESHOLD = 0.01).
+# Здесь: 0.5% — более мягкий порог, включает мелкие изменения цен.
+# Если β(is_magnit) сохраняет знак и значимость — результат не зависит от порога.
+# Используем category_name (не category_id!) как FE — та же причина, что в RC1.
 message("  [RC-2] Порог изменения 0.5%...")
 
 THRESHOLD_RC2 <- 0.005
 
 reg_data_rc2 <- panel %>%
+  left_join(cat_group_map, by = "category_id") %>%   # cat_group_map из script 06
   filter(!is.na(delta_effective_pct)) %>%
   mutate(
-    dln_effective  = log(effective_price / lag_effective),
-    is_magnit      = as.integer(store_chain == "Magnit"),
-    is_promo_i     = as.integer(is_promo),
+    dln_effective   = log(effective_price / lag_effective),
+    is_magnit       = as.integer(store_chain == "Magnit"),
+    is_promo_i      = as.integer(is_promo),
     changed_eff_rc2 = abs(delta_effective_pct) > THRESHOLD_RC2,
-    week_fct       = factor(week),
-    cat_fct        = factor(category_id),
-    store_fct      = factor(store_code)
+    week_fct        = factor(week),
+    cat_fct         = factor(cat_group),   # кросс-цепочечный ключ (как в script 06)
+    store_fct       = factor(store_code)
   ) %>%
-  filter(is.finite(dln_effective), changed_eff_rc2)   # только периоды с изменением
+  filter(is.finite(dln_effective), changed_eff_rc2, !is.na(cat_fct))   # только периоды с изменением
 
 m_rc2 <- feols(
   dln_effective ~ is_magnit + is_promo_i | cat_fct + week_fct,
@@ -47,6 +59,9 @@ m_rc2 <- feols(
 )
 
 # ── 7.3 Robustness 3: Исключение выбросов (|ΔP| > 50%) ───────────────────────
+# ЧТО ТЕСТИРУЕМ (RC3): не искажают ли результаты экстремальные ценовые изменения?
+# Выбросы >50% за неделю могут быть ошибками данных или уценкой при списании.
+# Используем reg_data из script 06 (с cat_group как FE) — уже очищен корректно.
 message("  [RC-3] Без выбросов (|ΔP| > 50%)...")
 
 m_rc3 <- feols(
@@ -56,8 +71,10 @@ m_rc3 <- feols(
 )
 
 # ── 7.4 Сводная таблица robustness ────────────────────────────────────────────
-# Сравниваем основную модель M1 и все RC
-# tidy_feols() определена выше, в секции 06
+# КАК ЧИТАТЬ РЕЗУЛЬТАТ: если β(is_magnit) и β(is_promo_i) сохраняют знак и уровень
+# значимости во всех RC — выводы из M1 устойчивы к выбору спецификации.
+# Если знак меняется или эффект пропадает — результат чувствителен к допущениям.
+# tidy_feols() определена в секции 06
 tidy_rc <- function(model, label) {
   tidy_feols(model) %>% mutate(model = label)
 }

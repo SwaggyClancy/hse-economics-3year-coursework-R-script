@@ -3,22 +3,25 @@
 message("\n[03] Корреляции и синхронность...")
 
 # ── 3.1 Корреляции между Пятёрочкой и Магнитом по категориям ─────────────────
-# Идея: по каждой категории берём долю изменений за неделю для каждой сети
-# и смотрим, коррелируют ли они
+# ЧТО ТЕСТИРУЕМ: синхронность ценовых решений между сетями.
+# Гипотеза: если сети реагируют на одни и те же внешние шоки (сезонность, инфляция,
+# общий спрос), корреляция частоты изменений между ними должна быть положительной.
+# Высокая корреляция → внешние факторы доминируют; низкая → решения принимаются независимо.
+# Сравниваем по category_name (не category_id!) — единственный общий ключ между сетями.
 
 weekly_chg_rate <- panel %>%
   filter(!is.na(delta_effective_pct)) %>%
-  group_by(store_chain, category_id, week) %>%
+  group_by(store_chain, category_name, week) %>%   # category_name — единый ключ для обеих сетей
   summarise(
-    chg_rate = mean(changed_effective, na.rm = TRUE),
+    chg_rate  = mean(changed_effective, na.rm = TRUE),
     avg_delta = mean(delta_effective_pct, na.rm = TRUE),
     .groups = "drop"
   )
 
-# Пивотируем: одна строка = неделя + категория, столбцы = сети
+# Пивотируем: одна строка = неделя + категория (по имени!), столбцы = сети
 weekly_wide <- weekly_chg_rate %>%
   pivot_wider(
-    id_cols     = c(category_id, week),
+    id_cols     = c(category_name, week),
     names_from  = store_chain,
     values_from = c(chg_rate, avg_delta),
     names_sep   = "_"
@@ -26,7 +29,7 @@ weekly_wide <- weekly_chg_rate %>%
 
 # Корреляции по категориям (Pyaterochka vs Magnit)
 cross_chain_cor <- weekly_wide %>%
-  group_by(category_id) %>%
+  group_by(category_name) %>%
   summarise(
     cor_chg_rate  = cor(chg_rate_Pyaterochka,  chg_rate_Magnit,
                         use = "pairwise.complete.obs"),
@@ -45,7 +48,7 @@ gt_cors <- cross_chain_cor %>%
     subtitle = "Корреляция недельной частоты изменений: Пятёрочка vs Магнит"
   ) %>%
   cols_label(
-    category_id   = "Категория",
+    category_name = "Категория",
     cor_chg_rate  = "Корр. (частота)",
     cor_avg_delta = "Корр. (ср. Δ%)",
     n_weeks       = "Недель"
@@ -63,12 +66,18 @@ gt_cors <- cross_chain_cor %>%
 save_gt_table(gt_cors, cross_chain_cor, "03_cross_chain_correlations")
 
 # ── 3.2 Корреляции между категориями внутри одной сети ────────────────────────
+# ЧТО ТЕСТИРУЕМ: централизованность ценовых решений внутри каждой сети.
+# Если ценообразование централизовано (как у Пятёрочки), все категории меняют
+# цены одновременно → высокие межкатегорийные корреляции и pct_pos ≈ 1.
+# Если децентрализовано (как у Магнита), каждая категория/магазин принимает
+# решения независимо → низкие корреляции и pct_pos ≈ 0.5.
+# Вывод в inter_cat_summary: сравни median_cor и pct_pos между сетями.
 
 compute_inter_cat_cor <- function(chain_name) {
   df <- weekly_chg_rate %>%
     filter(store_chain == chain_name) %>%
-    select(category_id, week, chg_rate) %>%
-    pivot_wider(names_from  = category_id,
+    select(category_name, week, chg_rate) %>%
+    pivot_wider(names_from  = category_name,
                 values_from = chg_rate)
 
   mat <- df %>%
@@ -77,7 +86,7 @@ compute_inter_cat_cor <- function(chain_name) {
 
   as_tibble(mat, rownames = "cat_from") %>%
     pivot_longer(-cat_from, names_to = "cat_to", values_to = "correlation") %>%
-    filter(cat_from < cat_to) %>%   # только верхний треугольник
+    filter(cat_from < cat_to) %>%
     mutate(store_chain = chain_name)
 }
 
