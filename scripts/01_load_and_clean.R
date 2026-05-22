@@ -1,4 +1,4 @@
-# ==============================================================================
+2# ==============================================================================
 # АНАЛИЗ ДИНАМИКИ ЦЕН НА ПРОДУКТОВОМ РЫНКЕ РФ
 # Пятёрочка vs Магнит — панельный анализ ценовой липкости
 #
@@ -149,7 +149,24 @@ panel <- raw %>%
     date           = as.Date(date),
     price_regular  = parse_price(price_regular),
     price_discount = parse_price(price_discount),
-    across(c(category_id, store_code, product_id, store_chain), as.character),
+    across(c(category_id, store_code, product_id, store_chain), as.character)
+  ) %>%
+  # Нормализация ориентации колонок цен (работает для обеих сетей).
+  # Инвариант после этого блока: price_regular = обычная цена,
+  #                               price_discount = акционная цена (< price_regular) или NA.
+  # У Магнита в исходных данных колонки перевёрнуты: price_regular хранит
+  # фактическую (возможно акционную) цену, а price_discount — зачёркнутую
+  # оригинальную (выше). У Пятёрочки ориентация правильная, но проверка
+  # срабатывает и для неё на случай аномальных строк.
+  mutate(
+    .tmp_reg  = price_regular,
+    .tmp_disc = price_discount,
+    .inverted = !is.na(.tmp_disc) & .tmp_disc > .tmp_reg & .tmp_reg > 0,
+    price_regular  = if_else(.inverted, .tmp_disc, .tmp_reg),
+    price_discount = if_else(.inverted, .tmp_reg,  .tmp_disc)
+  ) %>%
+  select(-.tmp_reg, -.tmp_disc, -.inverted) %>%
+  mutate(
     effective_price = coalesce(
       if_else(!is.na(price_discount) & price_discount < price_regular & price_discount > 0,
               price_discount, NA_real_),
