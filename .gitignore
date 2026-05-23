@@ -22,6 +22,9 @@ output/tables/*
 *.Rproj
 .Rproj.user/
 
+# Генерируемый локально отчёт (воспроизводится через scripts/08_report.R)
+output/report.html
+
 # Дополнительно
 renv/library/
 renv/python/

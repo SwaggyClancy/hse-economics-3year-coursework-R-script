@@ -47,6 +47,7 @@ run_script("scripts/04_variance_decomposition.R","[04] Декомпозиция 
 run_script("scripts/05_clustering.R",            "[05] Кластеризация категорий")
 run_script("scripts/06_panel_regression.R",      "[06] Панельная регрессия")
 run_script("scripts/07_robustness.R",            "[07] Проверки устойчивости")
+run_script("scripts/08_report.R",               "[08] HTML-отчёт")
 
 # ── Итоговое резюме ───────────────────────────────────────────────────────────
 elapsed_total <- round((proc.time() - t_start_total)[["elapsed"]], 1)

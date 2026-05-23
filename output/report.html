@@ -1,1754 +1,579 @@
 <!doctype html>
 <html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ценовая липкость в российском продуктовом ретейле</title>
-    <style>
-      :root {
-        --blue: #2563eb;
-        --blue-l: #dbeafe;
-        --green: #16a34a;
-        --green-l: #dcfce7;
-        --red: #dc2626;
-        --red-l: #fee2e2;
-        --gray: #64748b;
-        --gray-l: #f1f5f9;
-        --border: #e2e8f0;
-        --pya: #2563eb;
-        --mag: #dc2626;
-      }
-      * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
-      body {
-        font-family:
-          "Segoe UI",
-          system-ui,
-          -apple-system,
-          sans-serif;
-        font-size: 14px;
-        line-height: 1.6;
-        color: #1e293b;
-        background: #f8fafc;
-        max-width: 1100px;
-        margin: 0 auto;
-        padding: 24px 20px 60px;
-      }
-      .report-header {
-        background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
-        color: white;
-        border-radius: 16px;
-        padding: 40px 48px;
-        margin-bottom: 32px;
-      }
-      .report-header h1 {
-        font-size: 26px;
-        font-weight: 700;
-        letter-spacing: -0.3px;
-        margin-bottom: 8px;
-      }
-      .report-header .subtitle {
-        font-size: 15px;
-        opacity: 0.85;
-        margin-bottom: 20px;
-      }
-      .meta-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 12px;
-        margin-top: 20px;
-      }
-      .meta-item {
-        background: rgba(255, 255, 255, 0.12);
-        border-radius: 10px;
-        padding: 12px 16px;
-      }
-      .meta-item .label {
-        font-size: 11px;
-        opacity: 0.7;
-        text-transform: uppercase;
-        letter-spacing: 0.6px;
-      }
-      .meta-item .value {
-        font-size: 16px;
-        font-weight: 600;
-        margin-top: 2px;
-      }
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ценовая липкость в российском продуктовом ретейле</title>
+  <style>
+    :root{--blue:#2563eb;--blue-l:#dbeafe;--green:#16a34a;--green-l:#dcfce7;--red:#dc2626;--red-l:#fee2e2;--gray:#64748b;--gray-l:#f1f5f9;--border:#e2e8f0;--pya:#2563eb;--mag:#dc2626}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:"Segoe UI",system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.6;color:#1e293b;background:#f8fafc;max-width:1100px;margin:0 auto;padding:24px 20px 60px}
+    .report-header{background:linear-gradient(135deg,#1e3a5f 0%,#2563eb 100%);color:white;border-radius:16px;padding:40px 48px;margin-bottom:32px}
+    .report-header h1{font-size:26px;font-weight:700;letter-spacing:-0.3px;margin-bottom:8px}
+    .report-header .subtitle{font-size:15px;opacity:.85;margin-bottom:20px}
+    .meta-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:20px}
+    .meta-item{background:rgba(255,255,255,.12);border-radius:10px;padding:12px 16px}
+    .meta-item .label{font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:.6px}
+    .meta-item .value{font-size:16px;font-weight:600;margin-top:2px}
+    .toc{background:white;border:1px solid var(--border);border-radius:12px;padding:20px 28px;margin-bottom:28px}
+    .toc h2{font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--gray);margin-bottom:12px}
+    .toc ol{padding-left:20px}.toc li{margin-bottom:4px}
+    .toc a{color:var(--blue);text-decoration:none}.toc a:hover{text-decoration:underline}
+    .section{background:white;border:1px solid var(--border);border-radius:14px;padding:32px 36px;margin-bottom:24px}
+    .section-number{display:inline-block;background:var(--blue);color:white;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;margin-right:10px;vertical-align:middle}
+    .section h2{font-size:20px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:4px}
+    .section-desc{color:var(--gray);font-size:13px;margin-bottom:22px;padding-bottom:18px;border-bottom:1px solid var(--border)}
+    h3{font-size:15px;font-weight:600;margin:22px 0 10px;color:#334155}
+    .method-box{background:#f8fafc;border-left:3px solid var(--blue);border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:18px;font-size:13px;color:#475569}
+    .method-box strong{color:#1e293b}.method-box code{background:#e2e8f0;padding:1px 5px;border-radius:4px;font-family:"Consolas",monospace;font-size:12px}
+    .tbl-wrap{overflow-x:auto;margin:14px 0}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    thead th{background:#1e3a5f;color:white;padding:9px 13px;text-align:left;font-weight:600;font-size:12px;white-space:nowrap}
+    tbody tr:nth-child(even){background:#f8fafc}tbody tr:hover{background:var(--blue-l)}
+    td{padding:8px 13px;border-bottom:1px solid var(--border)}
+    .num{text-align:right;font-variant-numeric:tabular-nums}
+    .pya{color:var(--pya);font-weight:600}.mag{color:var(--mag);font-weight:600}
+    .highlight{background:#fefce8!important}.bold{font-weight:700}
+    .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+    .badge-green{background:var(--green-l);color:var(--green)}.badge-red{background:var(--red-l);color:var(--red)}
+    .badge-blue{background:var(--blue-l);color:var(--blue)}.badge-gray{background:var(--gray-l);color:var(--gray)}
+    .callout{border-radius:10px;padding:14px 18px;margin:16px 0;font-size:13px;display:flex;gap:12px;align-items:flex-start}
+    .callout-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+    .callout-key{background:#eff6ff;border:1px solid #bfdbfe}
+    .callout-warn{background:#fff7ed;border:1px solid #fed7aa}
+    .callout-note{background:#f0fdf4;border:1px solid #bbf7d0}
+    .fig-wrap{border:1px solid var(--border);border-radius:10px;overflow:hidden;margin:18px 0}
+    .fig-wrap img{width:100%;display:block}
+    .fig-caption{background:#f8fafc;border-top:1px solid var(--border);padding:9px 14px;font-size:12px;color:var(--gray)}
+    .fig-caption strong{color:#334155}
+    .fig-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:18px 0}
+    @media(max-width:720px){.fig-grid{grid-template-columns:1fr}}
+    .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:16px 0}
+    .stat-card{border:1px solid var(--border);border-radius:10px;padding:14px 16px;text-align:center}
+    .stat-card .label{font-size:11px;color:var(--gray);text-transform:uppercase;letter-spacing:.5px}
+    .stat-card .value{font-size:22px;font-weight:700;margin:4px 0}
+    .stat-card .sub{font-size:11px;color:var(--gray)}
+    .stat-card.pya-card{border-color:#bfdbfe;background:#eff6ff}.stat-card.pya-card .value{color:var(--blue)}
+    .stat-card.mag-card{border-color:#fecaca;background:#fef2f2}.stat-card.mag-card .value{color:var(--red)}
+    .cluster-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:16px 0}
+    .cluster-card{border:1px solid var(--border);border-radius:12px;padding:16px;position:relative}
+    .cluster-num{position:absolute;top:-10px;left:16px;background:var(--blue);color:white;font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px}
+    .cluster-card h4{font-size:13px;font-weight:700;margin:6px 0 8px}
+    .cluster-card .cats{font-size:12px;color:var(--gray);margin-bottom:10px;font-style:italic}
+    .cluster-stat{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid var(--border)}
+    .cluster-stat:last-child{border-bottom:none}.cluster-stat .k{color:var(--gray)}.cluster-stat .v{font-weight:600}
+    .sig-3{color:#7c3aed;font-weight:700}.coef-pos{color:var(--green)}.coef-neg{color:var(--red)}
+    .conclusions{background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);color:white;border-radius:14px;padding:32px 36px;margin-top:28px}
+    .conclusions h2{font-size:20px;font-weight:700;margin-bottom:20px;color:white}
+    .conclusion-item{display:flex;gap:16px;margin-bottom:16px;align-items:flex-start}
+    .conclusion-num{background:rgba(255,255,255,.15);color:white;font-weight:700;font-size:13px;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+    .conclusion-text{font-size:14px;line-height:1.6;opacity:.92}
+    .conclusion-text strong{color:#93c5fd}
+    footer{text-align:center;font-size:12px;color:var(--gray);margin-top:32px}
+  </style>
+</head>
+<body>
 
-      .fix-banner {
-        background: #fef3c7;
-        border: 1px solid #f59e0b;
-        border-radius: 12px;
-        padding: 14px 20px;
-        margin-bottom: 24px;
-        font-size: 13px;
-        display: flex;
-        gap: 12px;
-        align-items: flex-start;
-      }
-      .fix-banner strong {
-        color: #92400e;
-      }
+<!-- HEADER -->
+<div class="report-header">
+  <h1>Ценовая липкость в российском продуктовом ретейле</h1>
+  <div class="subtitle">Сравнительный анализ Пятёрочки и Магнита методами панельной регрессии и кластеризации</div>
+  <div class="meta-grid">
+    <div class="meta-item"><div class="label">Авторы</div><div class="value" style="font-size:13px">Абдуазизов, Андреасян, Андреев</div></div>
+    <div class="meta-item"><div class="label">Период данных</div><div class="value">9 недель</div></div>
+    <div class="meta-item"><div class="label">Наблюдений (регрессия)</div><div class="value">383 982</div></div>
+    <div class="meta-item"><div class="label">Товаров</div><div class="value">12 186</div></div>
+    <div class="meta-item"><div class="label">Категорий</div><div class="value">8 (Mag) + 7 (Pya)</div></div>
+    <div class="meta-item"><div class="label">Дата генерации</div><div class="value" style="font-size:13px">2026-05-23 18:34</div></div>
+  </div>
+</div>
 
-      .toc {
-        background: white;
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 20px 28px;
-        margin-bottom: 28px;
-      }
-      .toc h2 {
-        font-size: 13px;
-        text-transform: uppercase;
-        letter-spacing: 0.8px;
-        color: var(--gray);
-        margin-bottom: 12px;
-      }
-      .toc ol {
-        padding-left: 20px;
-      }
-      .toc li {
-        margin-bottom: 4px;
-      }
-      .toc a {
-        color: var(--blue);
-        text-decoration: none;
-      }
-      .toc a:hover {
-        text-decoration: underline;
-      }
+<!-- TOC -->
+<div class="toc">
+  <h2>Содержание</h2>
+  <ol>
+    <li><a href="#s1">Описательные метрики ценовой липкости</a></li>
+    <li><a href="#s2">Корреляции и синхронность между сетями</a></li>
+    <li><a href="#s3">Декомпозиция дисперсии</a></li>
+    <li><a href="#s4">Кластеризация категорий (K=3)</a></li>
+    <li><a href="#s5">Панельная регрессия</a></li>
+    <li><a href="#s6">Проверки устойчивости</a></li>
+    <li><a href="#conclusions">Ключевые выводы</a></li>
+  </ol>
+</div>
 
-      .section {
-        background: white;
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 32px 36px;
-        margin-bottom: 24px;
-      }
-      .section-number {
-        display: inline-block;
-        background: var(--blue);
-        color: white;
-        font-size: 11px;
-        font-weight: 700;
-        padding: 2px 9px;
-        border-radius: 20px;
-        margin-right: 10px;
-        vertical-align: middle;
-      }
-      .section h2 {
-        font-size: 20px;
-        font-weight: 700;
-        margin-bottom: 6px;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-      }
-      .section-desc {
-        color: var(--gray);
-        font-size: 13px;
-        margin-bottom: 22px;
-        padding-bottom: 18px;
-        border-bottom: 1px solid var(--border);
-      }
-      h3 {
-        font-size: 15px;
-        font-weight: 600;
-        margin: 22px 0 10px;
-        color: #334155;
-      }
+<!-- SECTION 1: STICKINESS -->
+<div class="section" id="s1">
+  <h2><span class="section-number">01</span>Описательные метрики ценовой липкости</h2>
+  <div class="section-desc">
+    Таблицы: <code>01_chain_stickiness.csv/.html</code> &middot; <code>02_category_stickiness.csv/.html</code>
+    &nbsp;|&nbsp; Графики: <code>01_freq_by_category.png</code> &middot; <code>02_promo_vs_freq.png</code> &middot; <code>03_spell_distribution.png</code>
+  </div>
+  <div class="method-box">
+    <strong>Методология.</strong> Для каждой пары (товар, неделя):
+    <code>freq_effective</code> &mdash; доля недель с <code>|&Delta;P_eff| &gt; 1%</code>;
+    <code>promo_share</code> &mdash; доля периодов с активной акцией;
+    <code>avg_promo_depth</code> = (P_reg &minus; P_eff) / P_reg по акционным периодам;
+    <code>avg_spell_length</code> &mdash; средняя длина &laquo;ценового спелла&raquo; (RLE по неизменным эффективным ценам).
+  </div>
 
-      .method-box {
-        background: #f8fafc;
-        border-left: 3px solid var(--blue);
-        border-radius: 0 8px 8px 0;
-        padding: 12px 16px;
-        margin-bottom: 18px;
-        font-size: 13px;
-        color: #475569;
-      }
-      .method-box strong {
-        color: #1e293b;
-      }
-      .method-box code {
-        background: #e2e8f0;
-        padding: 1px 5px;
-        border-radius: 4px;
-        font-family: "Consolas", monospace;
-        font-size: 12px;
-      }
+  <h3>Таблица 01 &mdash; Сводка по сетям <code style="font-size:11px">01_chain_stickiness.csv</code></h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr>
+        <th>Сеть</th><th class="num">Частота &Delta;P рег.</th><th class="num">Частота &Delta;P эфф.</th>
+        <th class="num">Ср. &Delta;P эфф.</th><th class="num">Доля акций</th><th class="num">Глубина акции</th>
+        <th class="num">Ср. спелл, нед</th><th class="num">Волатильность</th>
+        <th class="num">Категорий</th><th class="num">Товаров</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="pya">Пятёрочка</span></td>
+          <td class="num">27.0%</td>
+          <td class="num bold">32.4%</td>
+          <td class="num">12.5%</td>
+          <td class="num">13.2%</td>
+          <td class="num">20.2%</td>
+          <td class="num">4.2</td>
+          <td class="num">10.0%</td>
+          <td class="num">7</td>
+          <td class="num">7 375</td>
+        </tr>
+        <tr class="highlight">
+          <td><span class="mag">Магнит</span></td>
+          <td class="num">15.8%</td>
+          <td class="num">20.9%</td>
+          <td class="num bold">18.0%</td>
+          <td class="num bold">37.7%</td>
+          <td class="num bold">25.1%</td>
+          <td class="num bold">5.3</td>
+          <td class="num">10.7%</td>
+          <td class="num">8</td>
+          <td class="num">4 446</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 
-      .tbl-wrap {
-        overflow-x: auto;
-        margin: 14px 0;
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 13px;
-      }
-      thead th {
-        background: #1e3a5f;
-        color: white;
-        padding: 9px 13px;
-        text-align: left;
-        font-weight: 600;
-        font-size: 12px;
-        white-space: nowrap;
-      }
-      tbody tr:nth-child(even) {
-        background: #f8fafc;
-      }
-      tbody tr:hover {
-        background: var(--blue-l);
-      }
-      td {
-        padding: 8px 13px;
-        border-bottom: 1px solid var(--border);
-      }
-      .num {
-        text-align: right;
-        font-variant-numeric: tabular-nums;
-      }
-      .pya {
-        color: var(--pya);
-        font-weight: 600;
-      }
-      .mag {
-        color: var(--mag);
-        font-weight: 600;
-      }
-      .highlight {
-        background: #fefce8 !important;
-      }
-      .bold {
-        font-weight: 700;
-      }
-
-      .badge {
-        display: inline-block;
-        padding: 2px 8px;
-        border-radius: 20px;
-        font-size: 11px;
-        font-weight: 600;
-      }
-      .badge-green {
-        background: var(--green-l);
-        color: var(--green);
-      }
-      .badge-red {
-        background: var(--red-l);
-        color: var(--red);
-      }
-      .badge-blue {
-        background: var(--blue-l);
-        color: var(--blue);
-      }
-      .badge-gray {
-        background: var(--gray-l);
-        color: var(--gray);
-      }
-      .badge-orange {
-        background: #fff7ed;
-        color: #c2410c;
-      }
-
-      .callout {
-        border-radius: 10px;
-        padding: 14px 18px;
-        margin: 16px 0;
-        font-size: 13px;
-        display: flex;
-        gap: 12px;
-        align-items: flex-start;
-      }
-      .callout-icon {
-        font-size: 18px;
-        flex-shrink: 0;
-        margin-top: 1px;
-      }
-      .callout-key {
-        background: #eff6ff;
-        border: 1px solid #bfdbfe;
-      }
-      .callout-warn {
-        background: #fff7ed;
-        border: 1px solid #fed7aa;
-      }
-      .callout-note {
-        background: #f0fdf4;
-        border: 1px solid #bbf7d0;
-      }
-      .callout-changed {
-        background: #fdf4ff;
-        border: 1px solid #e879f9;
-      }
-
-      .fig-wrap {
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        overflow: hidden;
-        margin: 18px 0;
-      }
-      .fig-wrap img {
-        width: 100%;
-        display: block;
-        border-radius: 10px 10px 0 0;
-      }
-      .fig-caption {
-        background: #f8fafc;
-        border-top: 1px solid var(--border);
-        padding: 9px 14px;
-        font-size: 12px;
-        color: var(--gray);
-      }
-      .fig-caption strong {
-        color: #334155;
-      }
-      .fig-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
-        margin: 18px 0;
-      }
-      @media (max-width: 720px) {
-        .fig-grid {
-          grid-template-columns: 1fr;
-        }
-      }
-
-      .stat-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-        gap: 12px;
-        margin: 16px 0;
-      }
-      .stat-card {
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 14px 16px;
-        text-align: center;
-      }
-      .stat-card .label {
-        font-size: 11px;
-        color: var(--gray);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-      .stat-card .value {
-        font-size: 22px;
-        font-weight: 700;
-        margin: 4px 0;
-      }
-      .stat-card .sub {
-        font-size: 11px;
-        color: var(--gray);
-      }
-      .stat-card.pya-card {
-        border-color: #bfdbfe;
-        background: #eff6ff;
-      }
-      .stat-card.pya-card .value {
-        color: var(--blue);
-      }
-      .stat-card.mag-card {
-        border-color: #fecaca;
-        background: #fef2f2;
-      }
-      .stat-card.mag-card .value {
-        color: var(--red);
-      }
-
-      .cluster-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 14px;
-        margin: 16px 0;
-      }
-      .cluster-card {
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 16px;
-        position: relative;
-      }
-      .cluster-num {
-        position: absolute;
-        top: -10px;
-        left: 16px;
-        background: var(--blue);
-        color: white;
-        font-size: 11px;
-        font-weight: 700;
-        padding: 2px 10px;
-        border-radius: 20px;
-      }
-      .cluster-card h4 {
-        font-size: 13px;
-        font-weight: 700;
-        margin: 6px 0 8px;
-      }
-      .cluster-card .cats {
-        font-size: 12px;
-        color: var(--gray);
-        margin-bottom: 10px;
-        font-style: italic;
-      }
-      .cluster-stat {
-        display: flex;
-        justify-content: space-between;
-        font-size: 12px;
-        padding: 3px 0;
-        border-bottom: 1px solid var(--border);
-      }
-      .cluster-stat:last-child {
-        border-bottom: none;
-      }
-      .cluster-stat .k {
-        color: var(--gray);
-      }
-      .cluster-stat .v {
-        font-weight: 600;
-      }
-
-      .sig-3 {
-        color: #7c3aed;
-        font-weight: 700;
-      }
-      .coef-pos {
-        color: var(--green);
-      }
-      .coef-neg {
-        color: var(--red);
-      }
-
-      .conclusions {
-        background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
-        color: white;
-        border-radius: 14px;
-        padding: 32px 36px;
-        margin-top: 28px;
-      }
-      .conclusions h2 {
-        font-size: 20px;
-        font-weight: 700;
-        margin-bottom: 20px;
-        color: white;
-      }
-      .conclusion-item {
-        display: flex;
-        gap: 16px;
-        margin-bottom: 16px;
-        align-items: flex-start;
-      }
-      .conclusion-num {
-        background: rgba(255, 255, 255, 0.15);
-        color: white;
-        font-weight: 700;
-        font-size: 13px;
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        margin-top: 1px;
-      }
-      .conclusion-text {
-        font-size: 14px;
-        line-height: 1.6;
-        opacity: 0.92;
-      }
-      .conclusion-text strong {
-        color: #93c5fd;
-      }
-      footer {
-        text-align: center;
-        font-size: 12px;
-        color: var(--gray);
-        margin-top: 32px;
-      }
-      .changed-tag {
-        background: #fdf4ff;
-        color: #7c3aed;
-        border: 1px solid #e879f9;
-        border-radius: 4px;
-        font-size: 10px;
-        font-weight: 700;
-        padding: 1px 5px;
-        margin-left: 6px;
-        vertical-align: middle;
-      }
-    </style>
-  </head>
-  <body>
-    <!-- HEADER -->
-    <div class="report-header">
-      <h1>Ценовая липкость в российском продуктовом ретейле</h1>
-      <div class="subtitle">
-        Сравнительный анализ Пятёрочки и Магнита методами панельной регрессии и
-        кластеризации
-      </div>
-      <div class="meta-grid">
-        <div class="meta-item">
-          <div class="label">Авторы</div>
-          <div class="value" style="font-size: 13px">
-            Абдуазизов, Андреасян, Андреев
-          </div>
-        </div>
-        <div class="meta-item">
-          <div class="label">Период данных</div>
-          <div class="value">8 недель</div>
-        </div>
-        <div class="meta-item">
-          <div class="label">Наблюдений</div>
-          <div class="value">383 982</div>
-        </div>
-        <div class="meta-item">
-          <div class="label">Товаров</div>
-          <div class="value">11 821</div>
-        </div>
-        <div class="meta-item">
-          <div class="label">Категорий</div>
-          <div class="value">8 (Mag) + 7 (Pya)</div>
-        </div>
-      </div>
+  <div class="callout callout-key">
+    <div class="callout-icon">&#x1F4A1;</div>
+    <div>
+      <strong>Две разные ценовые стратегии.</strong>
+      Пятёрочка практикует <em>гибкое ценообразование</em> &mdash; регулярные цены меняются часто (27.0%), промо умеренные (13.2%, скидка 20.2%).
+      Магнит практикует стратегию <em>Hi-Lo</em> &mdash; регулярные цены стабильны (15.8%), но агрессивные промо (37.7%, скидка 25.1%) создают высокую активность эффективной цены.
     </div>
+  </div>
 
-    <!-- TOC -->
-    <div class="toc">
-      <h2>Содержание</h2>
-      <ol>
-        <li><a href="#s1">Описательные метрики ценовой липкости</a></li>
-        <li><a href="#s2">Корреляции и синхронность между сетями</a></li>
-        <li><a href="#s3">Декомпозиция дисперсии</a></li>
-        <li><a href="#s4">Кластеризация категорий</a></li>
-        <li><a href="#s5">Панельная регрессия</a></li>
-        <li><a href="#s6">Проверки устойчивости</a></li>
-        <li><a href="#conclusions">Ключевые выводы</a></li>
-      </ol>
+  <h3>Таблица 02 &mdash; Липкость по категориям <code style="font-size:11px">02_category_stickiness.csv</code></h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr>
+        <th>Сеть</th><th>Категория</th><th class="num">Частота &Delta;P рег.</th>
+        <th class="num">Частота &Delta;P эфф.</th><th class="num">Ср. &Delta;P эфф.</th>
+        <th class="num">Доля акций</th><th class="num">Глубина акции</th><th class="num">Ср. спелл, нед</th>
+      </tr></thead>
+      <tbody><tr><td><span class="mag">Магнит</span></td><td>Овощи и фрукты</td><td class="num">35.4%</td><td class="num">39.9%</td><td class="num">15.7%</td><td class="num">5.5%</td><td class="num">21.9%</td><td class="num">3.6</td></tr>
+<tr><td><span class="mag">Магнит</span></td><td>Хлеб и выпечка</td><td class="num">14.6%</td><td class="num">34.0%</td><td class="num">24.2%</td><td class="num">35.1%</td><td class="num">24.5%</td><td class="num">3.9</td></tr>
+<tr><td><span class="mag">Магнит</span></td><td>Вода и напитки</td><td class="num">18.8%</td><td class="num">21.6%</td><td class="num">13.8%</td><td class="num">21.4%</td><td class="num">18.3%</td><td class="num">5.1</td></tr>
+<tr><td><span class="mag">Магнит</span></td><td>Молочный прилавок</td><td class="num">18.8%</td><td class="num">20.7%</td><td class="num">14.5%</td><td class="num">37.9%</td><td class="num">26.9%</td><td class="num">5.2</td></tr>
+<tr><td><span class="mag">Магнит</span></td><td>Мясо и птица</td><td class="num">12.4%</td><td class="num">20.0%</td><td class="num">32.1%</td><td class="num">60.7%</td><td class="num">38.6%</td><td class="num">4.9</td></tr>
+<tr><td><span class="mag">Магнит</span></td><td>Бакалея</td><td class="num">11.9%</td><td class="num">17.8%</td><td class="num">18.0%</td><td class="num">36.9%</td><td class="num">24.8%</td><td class="num">5.7</td></tr>
+<tr><td><span class="mag">Магнит</span></td><td>Рыба и морепродукты</td><td class="num">11.7%</td><td class="num">14.2%</td><td class="num">21.7%</td><td class="num">57.1%</td><td class="num">26.9%</td><td class="num">5.9</td></tr>
+<tr><td><span class="mag">Магнит</span></td><td>Консервы</td><td class="num">8.1%</td><td class="num">11.7%</td><td class="num">13.8%</td><td class="num">53.2%</td><td class="num">20.9%</td><td class="num">6.6</td></tr>
+<tr style="border-top:2px solid #334155"><td><span class="pya">Пятёрочка</span></td><td>Рыба и морепродукты</td><td class="num">37.7%</td><td class="num">50.3%</td><td class="num">13.9%</td><td class="num">25.5%</td><td class="num">17.3%</td><td class="num">3.0</td></tr>
+<tr><td><span class="pya">Пятёрочка</span></td><td>Овощи и фрукты</td><td class="num">29.6%</td><td class="num">43.2%</td><td class="num">17.2%</td><td class="num">20.3%</td><td class="num">19.0%</td><td class="num">3.6</td></tr>
+<tr><td><span class="pya">Пятёрочка</span></td><td>Мясо и птица</td><td class="num">28.6%</td><td class="num">36.4%</td><td class="num">16.0%</td><td class="num">9.0%</td><td class="num">21.6%</td><td class="num">4.0</td></tr>
+<tr><td><span class="pya">Пятёрочка</span></td><td>Вода и напитки</td><td class="num">28.3%</td><td class="num">31.9%</td><td class="num">12.0%</td><td class="num">8.9%</td><td class="num">17.2%</td><td class="num">4.2</td></tr>
+<tr><td><span class="pya">Пятёрочка</span></td><td>Бакалея</td><td class="num">27.2%</td><td class="num">31.3%</td><td class="num">11.9%</td><td class="num">9.0%</td><td class="num">21.7%</td><td class="num">4.3</td></tr>
+<tr><td><span class="pya">Пятёрочка</span></td><td>Хлеб и выпечка</td><td class="num">25.4%</td><td class="num">29.5%</td><td class="num">11.8%</td><td class="num">6.1%</td><td class="num">17.9%</td><td class="num">4.5</td></tr>
+<tr><td><span class="pya">Пятёрочка</span></td><td>Молочный прилавок</td><td class="num">21.6%</td><td class="num">24.3%</td><td class="num">10.3%</td><td class="num">20.4%</td><td class="num">21.5%</td><td class="num">4.8</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="fig-wrap">
+    <img src="plots/01_freq_by_category.png" alt="Частота изменений по категориям" loading="lazy"/>
+    <div class="fig-caption"><strong>График 01 &middot; 01_freq_by_category.png</strong> &mdash; Частота изменения эффективной цены по категориям (bar chart). Ось Y &mdash; доля недель с изменением цены.</div>
+  </div>
+  <div class="fig-wrap">
+    <img src="plots/02_promo_vs_freq.png" alt="Промо vs частота" loading="lazy"/>
+    <div class="fig-caption"><strong>График 02 &middot; 02_promo_vs_freq.png</strong> &mdash; Scatter-plot: доля акций vs частота изменений цен. Размер точки = количество товаров.</div>
+  </div>
+  <div class="fig-wrap">
+    <img src="plots/03_spell_distribution.png" alt="Распределение спеллов" loading="lazy"/>
+    <div class="fig-caption"><strong>График 03 &middot; 03_spell_distribution.png</strong> &mdash; Гистограмма длительности ценовых спеллов (недели) по сетям.</div>
+  </div>
+</div>
+
+<!-- SECTION 2: CORRELATIONS -->
+<div class="section" id="s2">
+  <h2><span class="section-number">02</span>Корреляции и синхронность</h2>
+  <div class="section-desc">
+    Таблицы: <code>03_cross_chain_correlations.csv/.html</code> &middot; <code>05_intercategory_summary.csv</code>
+    &nbsp;|&nbsp; Графики: <code>04_intercategory_cor_pyaterochka.png</code> &middot; <code>05_intercategory_cor_magnit.png</code>
+  </div>
+  <div class="method-box">
+    <strong>Методология.</strong>
+    <strong>Кросс-цепочечная корреляция</strong> &mdash; Пирсон между Пятёрочкой и Магнитом по неделям внутри категории.
+    <strong>Межкатегорийная корреляция</strong> &mdash; попарная корреляция временных рядов частоты изменений внутри сети.
+  </div>
+
+  <h3>Таблица 03 &mdash; Синхронность между сетями <code style="font-size:11px">03_cross_chain_correlations.csv</code></h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr>
+        <th>Категория</th><th class="num">Корр. (частота)</th>
+        <th class="num">Корр. (ср. &Delta;%)</th><th class="num">Недель</th><th>Интерпретация</th>
+      </tr></thead>
+      <tbody><tr class="highlight"><td>Мясо и птица</td><td class="num"><span class="coef-pos bold">+0.746</span></td><td class="num">+0.345</td><td class="num">8</td><td><span class="badge badge-green">Высокая синхронность</span></td></tr>
+<tr class="highlight"><td>Бакалея</td><td class="num"><span class="coef-pos bold">+0.477</span></td><td class="num">+0.069</td><td class="num">8</td><td><span class="badge badge-blue">Умеренная</span></td></tr>
+<tr class="highlight"><td>Вода и напитки</td><td class="num"><span class="coef-neg bold">-0.436</span></td><td class="num">+0.082</td><td class="num">8</td><td><span class="badge badge-red">Обратная</span></td></tr>
+<tr><td>Овощи и фрукты</td><td class="num"><span class="coef-neg">-0.296</span></td><td class="num">+0.778</td><td class="num">8</td><td><span class="badge badge-red">Обратная</span></td></tr>
+<tr><td>Молочный прилавок</td><td class="num"><span class="coef-pos">+0.118</span></td><td class="num">+0.440</td><td class="num">8</td><td><span class="badge badge-gray">Слабая</span></td></tr>
+<tr><td>Рыба и морепродукты</td><td class="num"><span class="coef-pos">+0.073</span></td><td class="num">-0.278</td><td class="num">8</td><td><span class="badge badge-gray">Слабая</span></td></tr>
+<tr><td>Хлеб и выпечка</td><td class="num"><span class="coef-neg">-0.025</span></td><td class="num">+0.522</td><td class="num">8</td><td><span class="badge badge-gray">Слабая</span></td></tr>
+<tr><td>Консервы</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="num">0</td><td><span class="badge badge-gray">Только одна сеть</span></td></tr></tbody>
+    </table>
+  </div>
+
+  <h3>Межкатегорийные корреляции внутри сети <code style="font-size:11px">05_intercategory_summary.csv</code></h3>
+  <div class="stat-grid">
+    <div class="stat-card pya-card">
+      <div class="label">Пятёрочка &middot; медиана</div>
+      <div class="value">0.718</div>
+      <div class="sub">Межкатегорийная корреляция</div>
     </div>
-
-    <!-- ══════════════════════ SECTION 1 ══════════════════════ -->
-    <div class="section" id="s1">
-      <h2>
-        <span class="section-number">01</span>Описательные метрики ценовой
-        липкости
-      </h2>
-      <div class="section-desc">
-        Таблицы: <code>01_chain_stickiness.csv/.html</code> ·
-        <code>02_category_stickiness.csv/.html</code> &nbsp;|&nbsp; Графики:
-        <code>01_freq_by_category.png</code> ·
-        <code>02_promo_vs_freq.png</code> ·
-        <code>03_spell_distribution.png</code>
-      </div>
-
-      <div class="method-box">
-        <strong>Методология.</strong> Для каждой пары (товар, неделя):
-        <code>freq_effective</code> — доля недель с
-        <code>|ΔP_eff| &gt; 1%</code>; <code>freq_regular</code> — то же для
-        регулярной цены; <code>promo_share</code> — доля периодов с активной
-        акцией (<code>is_promo = TRUE</code>); <code>avg_promo_depth</code> =
-        (P_reg − P_eff) / P_reg по акционным периодам;
-        <code>avg_spell_length</code> — средняя длина «ценового спелла» (RLE по
-        неизменным эффективным ценам). Агрегация по сети — взвешенное среднее по
-        <code>n_obs</code>.
-      </div>
-
-      <h3>
-        Таблица 01 — Сводка по сетям
-        <code style="font-size: 11px">01_chain_stickiness.csv</code>
-      </h3>
-      <div class="tbl-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Сеть</th>
-              <th class="num">Частота ΔP рег.</th>
-              <th class="num">Частота ΔP эфф.</th>
-              <th class="num">Ср. ΔP эфф.</th>
-              <th class="num">
-                Доля акций <span class="changed-tag">UPD</span>
-              </th>
-              <th class="num">
-                Глубина акции <span class="changed-tag">UPD</span>
-              </th>
-              <th class="num">Ср. спелл, нед</th>
-              <th class="num">Волатильность</th>
-              <th class="num">Категорий</th>
-              <th class="num">Товаров</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><span class="pya">Пятёрочка</span></td>
-              <td class="num">27.0%</td>
-              <td class="num bold">32.4%</td>
-              <td class="num">12.5%</td>
-              <td class="num">13.2%</td>
-              <td class="num">20.2%</td>
-              <td class="num">4.2</td>
-              <td class="num">10.0%</td>
-              <td class="num">7</td>
-              <td class="num">7 375</td>
-            </tr>
-            <tr class="highlight">
-              <td><span class="mag">Магнит</span></td>
-              <td class="num">15.8%</td>
-              <td class="num">20.9%</td>
-              <td class="num bold">18.0%</td>
-              <td class="num bold">37.7%</td>
-              <td class="num bold">25.1%</td>
-              <td class="num bold">5.3</td>
-              <td class="num">10.7%</td>
-              <td class="num">8</td>
-              <td class="num">4 446</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="callout callout-changed">
-        <div class="callout-icon">🔄</div>
-        <div>
-          <strong>Ключевое изменение после исправления:</strong> Магнит оказался
-          значительно более промо-активным, чем Пятёрочка —
-          <strong>37.7% vs 13.2%</strong> периодов с акциями, глубина скидки
-          <strong>25.1% vs 20.2%</strong>. До исправления promo_share Магнита
-          ошибочно показывал 0%. Теперь видно, что у Магнита принципиально
-          другая стратегия: регулярные цены очень стабильны (15.8%), зато
-          промо-активность — самая высокая.
-        </div>
-      </div>
-
-      <div class="callout callout-key">
-        <div class="callout-icon">💡</div>
-        <div>
-          <strong>Две разные ценовые стратегии:</strong>
-          Пятёрочка практикует <em>умеренное гибкое ценообразование</em> —
-          регулярные цены меняются часто (27%), промо умеренные (13%, скидка
-          20%). Магнит практикует <em>стратегию Hi-Lo</em> — регулярные цены
-          очень стабильны (15.8%), но агрессивные частые промо (38%, скидка 25%)
-          создают высокую частоту изменений эффективной цены.
-        </div>
-      </div>
-
-      <h3>
-        Таблица 02 — Липкость по категориям
-        <code style="font-size: 11px">02_category_stickiness.csv</code>
-      </h3>
-      <div class="tbl-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Сеть</th>
-              <th>Категория</th>
-              <th class="num">Частота ΔP рег.</th>
-              <th class="num">Частота ΔP эфф.</th>
-              <th class="num">Ср. ΔP эфф.</th>
-              <th class="num">
-                Доля акций <span class="changed-tag">UPD</span>
-              </th>
-              <th class="num">
-                Глубина акции <span class="changed-tag">UPD</span>
-              </th>
-              <th class="num">Ср. спелл, нед</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><span class="mag">Магнит</span></td>
-              <td>Консервы</td>
-              <td class="num">8.1%</td>
-              <td class="num badge badge-green">11.7%</td>
-              <td class="num">13.8%</td>
-              <td class="num">53.2%</td>
-              <td class="num">20.9%</td>
-              <td class="num bold">6.6</td>
-            </tr>
-            <tr>
-              <td><span class="mag">Магнит</span></td>
-              <td>Рыба и морепродукты</td>
-              <td class="num">11.7%</td>
-              <td class="num">14.2%</td>
-              <td class="num">21.7%</td>
-              <td class="num">57.1%</td>
-              <td class="num">26.9%</td>
-              <td class="num">5.9</td>
-            </tr>
-            <tr>
-              <td><span class="mag">Магнит</span></td>
-              <td>Бакалея</td>
-              <td class="num">11.9%</td>
-              <td class="num">17.8%</td>
-              <td class="num">18.0%</td>
-              <td class="num">36.9%</td>
-              <td class="num">24.8%</td>
-              <td class="num">5.7</td>
-            </tr>
-            <tr>
-              <td><span class="mag">Магнит</span></td>
-              <td>Молочный прилавок</td>
-              <td class="num">18.8%</td>
-              <td class="num">20.7%</td>
-              <td class="num">14.5%</td>
-              <td class="num">37.9%</td>
-              <td class="num">26.9%</td>
-              <td class="num">5.2</td>
-            </tr>
-            <tr>
-              <td><span class="mag">Магнит</span></td>
-              <td>Вода и напитки</td>
-              <td class="num">18.8%</td>
-              <td class="num">21.6%</td>
-              <td class="num">13.8%</td>
-              <td class="num">21.4%</td>
-              <td class="num">18.3%</td>
-              <td class="num">5.1</td>
-            </tr>
-            <tr>
-              <td><span class="mag">Магнит</span></td>
-              <td>Мясо и птица</td>
-              <td class="num">12.4%</td>
-              <td class="num">20.0%</td>
-              <td class="num bold">32.1%</td>
-              <td class="num bold">60.7%</td>
-              <td class="num bold">38.6%</td>
-              <td class="num">4.9</td>
-            </tr>
-            <tr>
-              <td><span class="mag">Магнит</span></td>
-              <td>Хлеб и выпечка</td>
-              <td class="num">14.6%</td>
-              <td class="num">34.0%</td>
-              <td class="num">24.2%</td>
-              <td class="num">35.1%</td>
-              <td class="num">24.5%</td>
-              <td class="num">3.9</td>
-            </tr>
-            <tr>
-              <td><span class="mag">Магнит</span></td>
-              <td>Овощи и фрукты</td>
-              <td class="num">35.4%</td>
-              <td class="num">39.9%</td>
-              <td class="num">15.7%</td>
-              <td class="num">5.5%</td>
-              <td class="num">21.9%</td>
-              <td class="num">3.6</td>
-            </tr>
-            <tr style="border-top: 2px solid #334155">
-              <td><span class="pya">Пятёрочка</span></td>
-              <td>Молочный прилавок</td>
-              <td class="num">21.6%</td>
-              <td class="num">24.3%</td>
-              <td class="num">10.3%</td>
-              <td class="num">20.4%</td>
-              <td class="num">21.5%</td>
-              <td class="num">4.8</td>
-            </tr>
-            <tr>
-              <td><span class="pya">Пятёрочка</span></td>
-              <td>Хлеб и выпечка</td>
-              <td class="num">25.4%</td>
-              <td class="num">29.5%</td>
-              <td class="num">11.8%</td>
-              <td class="num">6.1%</td>
-              <td class="num">17.9%</td>
-              <td class="num">4.5</td>
-            </tr>
-            <tr>
-              <td><span class="pya">Пятёрочка</span></td>
-              <td>Бакалея</td>
-              <td class="num">27.2%</td>
-              <td class="num">31.3%</td>
-              <td class="num">11.9%</td>
-              <td class="num">9.0%</td>
-              <td class="num">21.7%</td>
-              <td class="num">4.3</td>
-            </tr>
-            <tr>
-              <td><span class="pya">Пятёрочка</span></td>
-              <td>Вода и напитки</td>
-              <td class="num">28.3%</td>
-              <td class="num">31.9%</td>
-              <td class="num">12.0%</td>
-              <td class="num">8.9%</td>
-              <td class="num">17.2%</td>
-              <td class="num">4.2</td>
-            </tr>
-            <tr>
-              <td><span class="pya">Пятёрочка</span></td>
-              <td>Мясо и птица</td>
-              <td class="num">28.6%</td>
-              <td class="num">36.4%</td>
-              <td class="num">16.0%</td>
-              <td class="num">9.0%</td>
-              <td class="num">21.6%</td>
-              <td class="num">4.0</td>
-            </tr>
-            <tr>
-              <td><span class="pya">Пятёрочка</span></td>
-              <td>Овощи и фрукты</td>
-              <td class="num">29.6%</td>
-              <td class="num">43.2%</td>
-              <td class="num">17.2%</td>
-              <td class="num">20.3%</td>
-              <td class="num">19.0%</td>
-              <td class="num">3.6</td>
-            </tr>
-            <tr class="highlight">
-              <td><span class="pya">Пятёрочка</span></td>
-              <td>Рыба и морепродукты</td>
-              <td class="num">37.7%</td>
-              <td class="num badge badge-red">50.3%</td>
-              <td class="num">13.9%</td>
-              <td class="num bold">25.5%</td>
-              <td class="num">17.3%</td>
-              <td class="num bold">3.0</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="callout callout-warn">
-        <div class="callout-icon">⚠️</div>
-        <div>
-          У Магнита разрыв между <code>freq_regular</code> и
-          <code>freq_effective</code> теперь объясняется промо: категория «Мясо
-          и птица» меняет регулярную цену лишь в <strong>12.4%</strong> недель,
-          но эффективную — в <strong>20.0%</strong>, при этом 60.7% периодов —
-          акционные. Значит промо-акции создают значительную долю событий
-          изменения эффективной цены у Магнита, а регулярные цены при этом
-          остаются высокостабильными.
-        </div>
-      </div>
-
-      <h3>Графики раздела</h3>
-      <div class="fig-wrap">
-        <img
-          src="plots/01_freq_by_category.png"
-          alt="Частота изменений по категориям"
-          loading="lazy"
-        />
-        <div class="fig-caption">
-          <strong>График 01 · 01_freq_by_category.png</strong> — Частота
-          изменения эффективной цены по категориям (bar chart). Ось Y — доля
-          недель с изменением цены. Для каждой категории — столбцы по сетям.
-        </div>
-      </div>
-      <div class="fig-wrap">
-        <img
-          src="plots/02_promo_vs_freq.png"
-          alt="Промо vs частота"
-          loading="lazy"
-        />
-        <div class="fig-caption">
-          <strong>График 02 · 02_promo_vs_freq.png</strong> — Scatter-plot «доля
-          акций vs частота изменений». Размер точки = количество товаров. После
-          исправления точки Магнита смещены вправо (высокий promo_share).
-          Корреляция промо и частоты изменений прослеживается для обеих сетей.
-        </div>
-      </div>
-      <div class="fig-wrap">
-        <img
-          src="plots/03_spell_distribution.png"
-          alt="Распределение спеллов"
-          loading="lazy"
-        />
-        <div class="fig-caption">
-          <strong>График 03 · 03_spell_distribution.png</strong> — Гистограмма
-          длительности ценовых спеллов (в неделях) для каждой сети. Магнит:
-          правостороннее смещение, длинные спеллы регулярных цен. Пятёрочка: пик
-          на коротких спеллах.
-        </div>
-      </div>
+    <div class="stat-card pya-card">
+      <div class="label">Пятёрочка &middot; % положительных</div>
+      <div class="value">100%</div>
+      <div class="sub">Пар с положительной корреляцией</div>
     </div>
-
-    <!-- ══════════════════════ SECTION 2 ══════════════════════ -->
-    <div class="section" id="s2">
-      <h2><span class="section-number">02</span>Корреляции и синхронность</h2>
-      <div class="section-desc">
-        Таблицы: <code>03_cross_chain_correlations.csv/.html</code> ·
-        <code>04_intercategory_cors.csv</code> ·
-        <code>05_intercategory_summary.csv</code> &nbsp;|&nbsp; Графики:
-        <code>04_intercategory_cor_pyaterochka.png</code> ·
-        <code>05_intercategory_cor_magnit.png</code>
-      </div>
-
-      <div class="method-box">
-        <strong>Методология.</strong> Для каждой (сеть, категория, неделя)
-        рассчитывается <code>chg_rate</code> — средняя доля товаров с изменением
-        эффективной цены. Строится wide-таблица по неделям.
-        <strong>Кросс-цепочечная корреляция</strong> — Пирсон между Пятёрочкой и
-        Магнитом по 8 неделям в каждой категории.
-        <strong>Межкатегорийная корреляция</strong> — попарная корреляция
-        временных рядов <code>chg_rate</code> внутри сети.
-      </div>
-
-      <h3>
-        Таблица 03 — Синхронность между сетями по категориям
-        <code style="font-size: 11px">03_cross_chain_correlations.csv</code>
-      </h3>
-      <div class="tbl-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Категория</th>
-              <th class="num">Корр. (частота)</th>
-              <th class="num">Корр. (ср. ΔP%)</th>
-              <th class="num">Недель</th>
-              <th>Интерпретация</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr class="highlight">
-              <td>Мясо и птица</td>
-              <td class="num bold coef-pos">+0.746</td>
-              <td class="num">+0.345</td>
-              <td class="num">8</td>
-              <td>
-                <span class="badge badge-green">Высокая синхронность</span>
-              </td>
-            </tr>
-            <tr>
-              <td>Бакалея</td>
-              <td class="num coef-pos">+0.477</td>
-              <td class="num">+0.069</td>
-              <td class="num">8</td>
-              <td><span class="badge badge-blue">Умеренная</span></td>
-            </tr>
-            <tr>
-              <td>Молочный прилавок</td>
-              <td class="num">+0.118</td>
-              <td class="num">+0.440</td>
-              <td class="num">8</td>
-              <td><span class="badge badge-gray">Слабая</span></td>
-            </tr>
-            <tr>
-              <td>Рыба и морепродукты</td>
-              <td class="num">+0.073</td>
-              <td class="num">−0.278</td>
-              <td class="num">8</td>
-              <td><span class="badge badge-gray">Нет</span></td>
-            </tr>
-            <tr>
-              <td>Хлеб и выпечка</td>
-              <td class="num">−0.025</td>
-              <td class="num">+0.522</td>
-              <td class="num">8</td>
-              <td><span class="badge badge-gray">Асинхронность</span></td>
-            </tr>
-            <tr>
-              <td>Овощи и фрукты</td>
-              <td class="num coef-neg">−0.296</td>
-              <td class="num coef-pos">+0.778</td>
-              <td class="num">8</td>
-              <td>
-                <span class="badge badge-red">Обратная (по частоте)</span>
-              </td>
-            </tr>
-            <tr class="highlight">
-              <td>Вода и напитки</td>
-              <td class="num bold coef-neg">−0.436</td>
-              <td class="num">+0.082</td>
-              <td class="num">8</td>
-              <td>
-                <span class="badge badge-red">Обратная синхронность</span>
-              </td>
-            </tr>
-            <tr>
-              <td>Консервы</td>
-              <td class="num">—</td>
-              <td class="num">—</td>
-              <td class="num">0</td>
-              <td><span class="badge badge-gray">Только Магнит</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="callout callout-note">
-        <div class="callout-icon">📝</div>
-        <div>
-          Кросс-цепочечные корреляции не изменились после исправления данных —
-          они основаны на частоте изменений эффективной цены
-          (<code>changed_effective</code>), которая фиксирует факт движения цены
-          независимо от причины (промо или нет). Структурные выводы о
-          синхронности остались прежними.
-        </div>
-      </div>
-
-      <h3>
-        Таблица 05 — Межкатегорийные корреляции внутри сети
-        <code style="font-size: 11px">05_intercategory_summary.csv</code>
-      </h3>
-      <div class="stat-grid">
-        <div class="stat-card pya-card">
-          <div class="label">Пятёрочка · медиана</div>
-          <div class="value">0.718</div>
-          <div class="sub">Межкатегорийная корреляция</div>
-        </div>
-        <div class="stat-card pya-card">
-          <div class="label">Пятёрочка · % положительных</div>
-          <div class="value">100%</div>
-          <div class="sub">Все пары коррелируют положительно</div>
-        </div>
-        <div class="stat-card mag-card">
-          <div class="label">Магнит · медиана</div>
-          <div class="value">0.121</div>
-          <div class="sub">Межкатегорийная корреляция</div>
-        </div>
-        <div class="stat-card mag-card">
-          <div class="label">Магнит · % положительных</div>
-          <div class="value">53.6%</div>
-          <div class="sub">Чуть больше половины пар</div>
-        </div>
-      </div>
-
-      <div class="callout callout-key">
-        <div class="callout-icon">💡</div>
-        <div>
-          <strong>Структура ценообразования:</strong> В Пятёрочке все 21 пара
-          категорий коррелируют положительно (медиана r = 0.72) —
-          <strong>централизованное ценообразование</strong>. В Магните медиана r
-          = 0.12, только 53.6% пар положительны —
-          <strong>децентрализованное</strong>. Это согласуется со стратегией
-          Hi-Lo: Магнит запускает промо по категориям независимо, а не
-          согласованно.
-        </div>
-      </div>
-
-      <div class="fig-grid">
-        <div class="fig-wrap">
-          <img
-            src="plots/04_intercategory_cor_pyaterochka.png"
-            alt="Корреляции Пятёрочка"
-            loading="lazy"
-          />
-          <div class="fig-caption">
-            <strong>График 04 · Пятёрочка</strong> — Тепловая карта попарных
-            корреляций. Преимущественно синяя — централизованное
-            ценообразование.
-          </div>
-        </div>
-        <div class="fig-wrap">
-          <img
-            src="plots/05_intercategory_cor_magnit.png"
-            alt="Корреляции Магнит"
-            loading="lazy"
-          />
-          <div class="fig-caption">
-            <strong>График 05 · Магнит</strong> — Пёстрая тепловая карта:
-            Вода×Овощи (r = −0.91), Консервы×Овощи (r = −0.91). Категории
-            действуют независимо.
-          </div>
-        </div>
-      </div>
+    <div class="stat-card mag-card">
+      <div class="label">Магнит &middot; медиана</div>
+      <div class="value">0.121</div>
+      <div class="sub">Межкатегорийная корреляция</div>
     </div>
-
-    <!-- ══════════════════════ SECTION 3 ══════════════════════ -->
-    <div class="section" id="s3">
-      <h2><span class="section-number">03</span>Декомпозиция дисперсии</h2>
-      <div class="section-desc">
-        Таблица: <code>06_variance_decomposition.csv/.html</code> &nbsp;|&nbsp;
-        График: <code>06_variance_decomposition.png</code>
-      </div>
-
-      <div class="method-box">
-        <strong>Методология.</strong> Последовательно оцениваются модели через
-        <code>fixest::feols</code>: <code>Δ_eff ~ 1 | сеть</code>,
-        <code>~ 1 | категория</code>, <code>~ 1 | магазин</code>,
-        <code>~ 1 | сеть+категория</code>,
-        <code>~ 1 | сеть+категория+магазин</code>. Инкрементальный ΔR²
-        показывает «чистый» вклад каждого уровня.
-      </div>
-
-      <h3>
-        Таблица 06
-        <code style="font-size: 11px">06_variance_decomposition.csv</code>
-      </h3>
-      <div class="tbl-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Модель (FE)</th>
-              <th class="num">R² adj.</th>
-              <th class="num">ΔR² (инкрем.)</th>
-              <th>Вывод</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Только сеть</td>
-              <td class="num">0.026%</td>
-              <td class="num">0.026%</td>
-              <td>Наименьший вклад из трёх</td>
-            </tr>
-            <tr class="highlight">
-              <td>Только категория</td>
-              <td class="num bold">0.111%</td>
-              <td class="num bold">0.111%</td>
-              <td>Категория объясняет больше всего</td>
-            </tr>
-            <tr>
-              <td>Только магазин</td>
-              <td class="num">0.029%</td>
-              <td class="num">0.029%</td>
-              <td>Незначительный вклад</td>
-            </tr>
-            <tr>
-              <td>Сеть + Категория</td>
-              <td class="num">0.110%</td>
-              <td class="num">0.084%</td>
-              <td>Сеть поверх категории почти ничего не добавляет</td>
-            </tr>
-            <tr class="highlight">
-              <td><strong>Полная модель</strong></td>
-              <td class="num bold">0.114%</td>
-              <td class="num">0.003%</td>
-              <td>Магазин добавляет ≈ ноль</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="callout callout-note">
-        <div class="callout-icon">📊</div>
-        <div>
-          Результаты декомпозиции не изменились после исправления промо-данных:
-          вся вариация Δ_eff слабо объясняется структурными факторами (0.114%
-          суммарно). <strong>Категория</strong> — наибольший вклад. Большинство
-          изменений идиосинкратичны.
-        </div>
-      </div>
-
-      <div class="fig-wrap" style="max-width: 600px">
-        <img
-          src="plots/06_variance_decomposition.png"
-          alt="Декомпозиция дисперсии"
-          loading="lazy"
-        />
-        <div class="fig-caption">
-          <strong>График 06 · 06_variance_decomposition.png</strong> — Bar chart
-          трёх «чистых» вкладов в R² adj. Категория доминирует.
-        </div>
-      </div>
+    <div class="stat-card mag-card">
+      <div class="label">Магнит &middot; % положительных</div>
+      <div class="value">54%</div>
+      <div class="sub">Пар с положительной корреляцией</div>
     </div>
+  </div>
 
-    <!-- ══════════════════════ SECTION 4 ══════════════════════ -->
-    <div class="section" id="s4">
-      <h2>
-        <span class="section-number">04</span>Кластеризация категорий
-        <span class="changed-tag">UPD</span>
-      </h2>
-      <div class="section-desc">
-        Таблицы: <code>07_cluster_centroids.csv/.html</code> ·
-        <code>08_category_cluster_assignment.csv</code> &nbsp;|&nbsp; Графики:
-        <code>07_silhouette_scores.png</code> · <code>08_cluster_pca.png</code>
-      </div>
-
-      <div class="method-box">
-        <strong>Методология.</strong> Признаки: <code>freq_effective</code>,
-        <code>avg_change_effective</code>, <code>promo_share</code>,
-        <code>volatility</code>, <code>avg_spell_length</code> — взвешенное
-        среднее по обеим сетям. Матрица стандартизирована
-        (<code>scale()</code>). K выбирается по максимуму silhouette score.
-        Финальный K-means: <code>set.seed(42)</code>, <code>nstart=50</code>.
-        После исправления промо-данных Магнита значения
-        <code>promo_share</code> по категориям существенно изменились, что
-        повлияло на структуру кластеров.
-      </div>
-
-      <div class="callout callout-changed">
-        <div class="callout-icon">🔄</div>
-        <div>
-          <strong>Структура кластеров изменилась:</strong> оптимальное K
-          снизилось с 4 до <strong>3</strong>. Причина — после учёта промо
-          Магнита категории перераспределились: старый «акционный» кластер
-          (Овощи, Рыба) слился с «активными» (Мясо, Хлеб) в один большой кластер
-          1. Консервы остались в отдельном кластере, но теперь характеризуются
-          не нулевой долей акций, а наоборот —
-          <strong>максимальной (53.2%)</strong> при минимальной частоте
-          изменений.
-        </div>
-      </div>
-
-      <div class="fig-wrap" style="max-width: 500px">
-        <img
-          src="plots/07_silhouette_scores.png"
-          alt="Silhouette scores"
-          loading="lazy"
-        />
-        <div class="fig-caption">
-          <strong>График 07 · 07_silhouette_scores.png</strong> — Максимум
-          silhouette score теперь при K = 3 (было K = 4).
-        </div>
-      </div>
-
-      <h3>
-        Таблица 07 — Центроиды кластеров (K=3)
-        <code style="font-size: 11px">07_cluster_centroids.csv</code>
-      </h3>
-      <div class="cluster-grid">
-        <div class="cluster-card">
-          <div class="cluster-num">Кластер 1</div>
-          <h4>«Активные»</h4>
-          <div class="cats">
-            Мясо и птица, Овощи и фрукты, Рыба и морепродукты, Хлеб и выпечка
-          </div>
-          <div class="cluster-stat">
-            <span class="k">Частота ΔP эфф.</span><span class="v">34.3%</span>
-          </div>
-          <div class="cluster-stat">
-            <span class="k">Ср. размер ΔP</span
-            ><span class="v badge badge-red">18.6%</span>
-          </div>
-          <div class="cluster-stat">
-            <span class="k">Доля акций</span><span class="v">26.4%</span>
-          </div>
-          <div class="cluster-stat">
-            <span class="k">Волатильность</span><span class="v">14.2%</span>
-          </div>
-          <div class="cluster-stat">
-            <span class="k">Ср. спелл</span><span class="v">4.1 нед</span>
-          </div>
-        </div>
-        <div class="cluster-card">
-          <div class="cluster-num">Кластер 2</div>
-          <h4>«Умеренные»</h4>
-          <div class="cats">Бакалея, Вода и напитки, Молочный прилавок</div>
-          <div class="cluster-stat">
-            <span class="k">Частота ΔP эфф.</span><span class="v">25.4%</span>
-          </div>
-          <div class="cluster-stat">
-            <span class="k">Ср. размер ΔP</span><span class="v">13.1%</span>
-          </div>
-          <div class="cluster-stat">
-            <span class="k">Доля акций</span><span class="v">20.8%</span>
-          </div>
-          <div class="cluster-stat">
-            <span class="k">Волатильность</span><span class="v">8.6%</span>
-          </div>
-          <div class="cluster-stat">
-            <span class="k">Ср. спелл</span><span class="v">4.8 нед</span>
-          </div>
-        </div>
-        <div class="cluster-card">
-          <div class="cluster-num">Кластер 3</div>
-          <h4>«Стабильные цены — активное промо»</h4>
-          <div class="cats">Консервы</div>
-          <div class="cluster-stat">
-            <span class="k">Частота ΔP эфф.</span
-            ><span class="v badge badge-green">11.7%</span>
-          </div>
-          <div class="cluster-stat">
-            <span class="k">Ср. размер ΔP</span><span class="v">13.8%</span>
-          </div>
-          <div class="cluster-stat">
-            <span class="k">Доля акций</span
-            ><span class="v badge badge-red">53.2%</span>
-          </div>
-          <div class="cluster-stat">
-            <span class="k">Волатильность</span><span class="v">6.4%</span>
-          </div>
-          <div class="cluster-stat">
-            <span class="k">Ср. спелл</span><span class="v bold">6.6 нед</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="callout callout-key">
-        <div class="callout-icon">💡</div>
-        <div>
-          <strong>Парадокс Консервов (Кластер 3):</strong> самая высокая доля
-          акций (53.2%) сочетается с самой низкой частотой изменений эффективной
-          цены (11.7%) и самыми длинными спеллами (6.6 нед). Объяснение: у
-          Консервов Магнита промо-цена стабильна на протяжении нескольких недель
-          подряд — то есть акции «долгоживущие», а не разовые. Эффективная цена
-          не «прыгает» каждую неделю, несмотря на высокий promo_share.
-        </div>
-      </div>
-
-      <h3>
-        Таблица 08 — Принадлежность категорий к кластерам
-        <code style="font-size: 11px">08_category_cluster_assignment.csv</code>
-      </h3>
-      <div class="tbl-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Категория</th>
-              <th class="num">Кластер</th>
-              <th class="num">Частота эфф.</th>
-              <th class="num">Ср. ΔP</th>
-              <th class="num">Акции</th>
-              <th class="num">Спелл, нед</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Мясо и птица</td>
-              <td class="num bold">1</td>
-              <td class="num">29.1%</td>
-              <td class="num">23.2%</td>
-              <td class="num">32.1%</td>
-              <td class="num">4.4</td>
-            </tr>
-            <tr>
-              <td>Овощи и фрукты</td>
-              <td class="num bold">1</td>
-              <td class="num">42.0%</td>
-              <td class="num">16.6%</td>
-              <td class="num">15.0%</td>
-              <td class="num">3.6</td>
-            </tr>
-            <tr>
-              <td>Рыба и морепродукты</td>
-              <td class="num bold">1</td>
-              <td class="num">34.4%</td>
-              <td class="num">17.4%</td>
-              <td class="num">39.4%</td>
-              <td class="num">4.3</td>
-            </tr>
-            <tr>
-              <td>Хлеб и выпечка</td>
-              <td class="num bold">1</td>
-              <td class="num">31.6%</td>
-              <td class="num">17.4%</td>
-              <td class="num">19.2%</td>
-              <td class="num">4.2</td>
-            </tr>
-            <tr>
-              <td>Бакалея</td>
-              <td class="num bold">2</td>
-              <td class="num">26.5%</td>
-              <td class="num">14.0%</td>
-              <td class="num">18.9%</td>
-              <td class="num">4.8</td>
-            </tr>
-            <tr>
-              <td>Вода и напитки</td>
-              <td class="num bold">2</td>
-              <td class="num">26.9%</td>
-              <td class="num">12.9%</td>
-              <td class="num">14.9%</td>
-              <td class="num">4.6</td>
-            </tr>
-            <tr>
-              <td>Молочный прилавок</td>
-              <td class="num bold">2</td>
-              <td class="num">22.6%</td>
-              <td class="num">12.3%</td>
-              <td class="num">28.5%</td>
-              <td class="num">5.0</td>
-            </tr>
-            <tr class="highlight">
-              <td>Консервы</td>
-              <td class="num bold">3</td>
-              <td class="num badge badge-green">11.7%</td>
-              <td class="num">13.8%</td>
-              <td class="num badge badge-red">53.2%</td>
-              <td class="num bold">6.6</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="fig-wrap">
-        <img src="plots/08_cluster_pca.png" alt="PCA кластеры" loading="lazy" />
-        <div class="fig-caption">
-          <strong>График 08 · 08_cluster_pca.png</strong> — 2D PCA-проекция
-          категорий с кластерными оболочками. Консервы обособлены по оси
-          промо-активности. Три кластера хорошо разделены в пространстве PCA.
-        </div>
-      </div>
+  <div class="callout callout-key">
+    <div class="callout-icon">&#x1F4A1;</div>
+    <div>
+      <strong>Структура ценообразования:</strong>
+      В Пятёрочке медиана межкатегорийной корреляции = 0.718, 100% пар положительны &mdash;
+      <strong>централизованное ценообразование</strong>.
+      В Магните медиана = 0.121, 54% положительных &mdash;
+      <strong>децентрализованное</strong>. Промо запускаются по категориям независимо.
     </div>
+  </div>
 
-    <!-- ══════════════════════ SECTION 5 ══════════════════════ -->
-    <div class="section" id="s5">
-      <h2>
-        <span class="section-number">05</span>Панельная регрессия
-        <span class="changed-tag">UPD</span>
-      </h2>
-      <div class="section-desc">
-        Таблицы: <code>09_regression_coefs.csv</code> ·
-        <code>09_regression_results.tex</code> ·
-        <code>10_regression_gof.csv/.html</code> &nbsp;|&nbsp; График:
-        <code>09_coef_plot.png</code>
-      </div>
-
-      <div class="method-box">
-        <strong>M1:</strong>
-        <code>Δln(P_eff) = β₁·Magnit + β₂·Promo + α_cat + α_week + ε</code
-        ><br />
-        <strong>M2:</strong>
-        <code>Δln(P_eff) = β₂·Promo | cat + week + store</code><br />
-        <strong>M3 (только Пятёрочка):</strong>
-        <code>Δln(P_eff) = β₂·Promo | cat + week</code><br />
-        Зависимая переменная:
-        <code>dln_effective = log(P_eff / P_eff_lag)</code>. FE по
-        кросс-цепочечному имени категории. SE кластеризованы по магазину
-        (<code>fixest::feols</code>).
-      </div>
-
-      <div class="callout callout-changed">
-        <div class="callout-icon">🔄</div>
-        <div>
-          <strong>Знак β(Magnit) изменился на противоположный:</strong> было
-          −0.0087 (Магнит снижал эффективные цены относительно Пятёрочки), стало
-          <strong>+0.0170</strong> (Магнит повышает). Это корректный результат:
-          теперь модель видит, что у Магнита эффективные цены испытывают бо́льшие
-          положительные изменения — когда промо заканчивается, цена резко
-          возвращается к регулярному уровню (более высокому). Эффект промо (β₂)
-          уменьшился по модулю с −8.4% до <strong>−6.4%</strong>, но остался
-          высокозначимым. R² вырос с 4.5% до 6.6%.
-        </div>
-      </div>
-
-      <h3>
-        Таблица 09 — Коэффициенты
-        <code style="font-size: 11px">09_regression_coefs.csv</code>
-      </h3>
-      <div class="tbl-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Регрессор</th>
-              <th class="num">Оценка β</th>
-              <th class="num">Ст. ошибка</th>
-              <th class="num">t-стат.</th>
-              <th class="num">p-value</th>
-              <th>Спецификация</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr class="highlight">
-              <td><strong>Магнит (vs Пятёрочка)</strong></td>
-              <td class="num coef-pos bold">+0.01695</td>
-              <td class="num">0.001432</td>
-              <td class="num">+11.83</td>
-              <td class="num"><span class="sig-3">5.2 × 10⁻¹¹</span></td>
-              <td>M1: FE(cat + week)</td>
-            </tr>
-            <tr class="highlight">
-              <td><strong>Промо-акция</strong></td>
-              <td class="num coef-neg bold">−0.06351</td>
-              <td class="num">0.003250</td>
-              <td class="num">−19.54</td>
-              <td class="num"><span class="sig-3">2.2 × 10⁻¹⁵</span></td>
-              <td>M1: FE(cat + week)</td>
-            </tr>
-            <tr>
-              <td>Промо-акция</td>
-              <td class="num coef-neg">−0.06465</td>
-              <td class="num">0.003203</td>
-              <td class="num">−20.18</td>
-              <td class="num"><span class="sig-3">1.1 × 10⁻¹⁵</span></td>
-              <td>M2: FE(cat + week + store)</td>
-            </tr>
-            <tr>
-              <td>Промо-акция</td>
-              <td class="num coef-neg">−0.08461</td>
-              <td class="num">0.003064</td>
-              <td class="num">−27.61</td>
-              <td class="num"><span class="sig-3">9.0 × 10⁻¹¹</span></td>
-              <td>M3: Только Пятёрочка</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="callout callout-key">
-        <div class="callout-icon">📈</div>
-        <div>
-          <strong>β(Magnit) = +1.70%</strong> — Контролируя категорию и период,
-          в Магните log-изменения эффективной цены в среднем на 1.70 п.п. выше,
-          чем в Пятёрочке. Причина: окончание глубоких промо у Магнита создаёт
-          резкие положительные скачки цены назад к регулярному уровню.<br /><br />
-          <strong>β(Promo) = −6.4%</strong> — В акционный период эффективная
-          цена снижается на ~6.4% (log-изменение). Коэффициент устойчив в M1 и
-          M2. В M3 (только Пятёрочка) эффект выше (−8.5%), что говорит о более
-          «резких» промо у Пятёрочки по сравнению с Магнитом в рамках одного
-          периода.
-        </div>
-      </div>
-
-      <h3>
-        Таблица 10 — Качество подгонки
-        <code style="font-size: 11px">10_regression_gof.csv</code>
-      </h3>
-      <div class="tbl-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Спецификация</th>
-              <th class="num">N</th>
-              <th class="num">
-                R² within <span class="changed-tag">UPD</span>
-              </th>
-              <th class="num">R² adj.</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>M1 — Pooled FE(cat+week)</td>
-              <td class="num">383 982</td>
-              <td class="num bold">6.63%</td>
-              <td class="num">6.62%</td>
-            </tr>
-            <tr>
-              <td>M2 — FE(cat+week+store)</td>
-              <td class="num">383 982</td>
-              <td class="num">6.74%</td>
-              <td class="num">6.73%</td>
-            </tr>
-            <tr class="highlight">
-              <td>M3 — Только Пятёрочка</td>
-              <td class="num">212 239</td>
-              <td class="num">8.85%</td>
-              <td class="num">8.85%</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="callout callout-note">
-        <div class="callout-icon">📝</div>
-        <div>
-          R² вырос с 4.5% до <strong>6.6%</strong> после исправления
-          промо-данных Магнита — модель теперь лучше улавливает ценовую
-          динамику. Разница R² между M1 и M3 (Пятёрочка) сократилась:
-          промо-эффект у обеих сетей теперь вносит сопоставимый вклад.
-        </div>
-      </div>
-
-      <div class="fig-wrap">
-        <img
-          src="plots/09_coef_plot.png"
-          alt="Коэффициентный граф"
-          loading="lazy"
-        />
-        <div class="fig-caption">
-          <strong>График 09 · 09_coef_plot.png</strong> — Коэффициентный граф с
-          95% ДИ. β(Magnit) теперь положительный (выше нуля). β(Promo)
-          отрицательный во всех спецификациях.
-        </div>
-      </div>
+  <div class="fig-grid">
+    <div class="fig-wrap">
+      <img src="plots/04_intercategory_cor_pyaterochka.png" alt="Корреляции Пятёрочка" loading="lazy"/>
+      <div class="fig-caption"><strong>График 04 &middot; Пятёрочка</strong> &mdash; Тепловая карта попарных корреляций. Централизованное ценообразование.</div>
     </div>
-
-    <!-- ══════════════════════ SECTION 6 ══════════════════════ -->
-    <div class="section" id="s6">
-      <h2>
-        <span class="section-number">06</span>Проверки устойчивости
-        <span class="changed-tag">UPD</span>
-      </h2>
-      <div class="section-desc">
-        Таблицы: <code>11_robustness_coefs.csv</code> ·
-        <code>11_robustness_table.csv/.html</code> &nbsp;|&nbsp; График:
-        <code>10_robustness_coef_plot.png</code>
-      </div>
-
-      <div class="method-box">
-        <strong>RC1 — Только регулярные цены:</strong>
-        <code>log(P_reg / P_reg_lag)</code>, промо исключены. Сохраняется ли
-        эффект Магнита без влияния промо?<br />
-        <strong>RC2 — Порог 0.5%</strong> вместо основных 1%. Чувствительность к
-        выбору порога.<br />
-        <strong>RC3 — Без выбросов</strong> (<code>|Δln(P)| ≤ 50%</code>). Не
-        искажают ли результат экстремальные изменения?
-      </div>
-
-      <h3>
-        Таблица 11 — Сводная таблица robustness
-        <code style="font-size: 11px">11_robustness_table.csv</code>
-      </h3>
-      <div class="tbl-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Спецификация</th>
-              <th class="num">β(Magnit)</th>
-              <th class="num">SE</th>
-              <th class="num">p</th>
-              <th class="num">β(Promo)</th>
-              <th class="num">SE</th>
-              <th class="num">p</th>
-              <th>Знак Magnit</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr class="highlight">
-              <td><strong>Основная (M1)</strong></td>
-              <td class="num coef-pos bold">+0.01695</td>
-              <td class="num">0.001432</td>
-              <td class="num"><span class="sig-3">***</span></td>
-              <td class="num coef-neg bold">−0.06351</td>
-              <td class="num">0.003250</td>
-              <td class="num"><span class="sig-3">***</span></td>
-              <td>↑</td>
-            </tr>
-            <tr>
-              <td>RC1: Только рег. цены</td>
-              <td class="num coef-pos">+0.00394</td>
-              <td class="num">0.000374</td>
-              <td class="num"><span class="sig-3">***</span></td>
-              <td class="num">—</td>
-              <td class="num">—</td>
-              <td class="num">—</td>
-              <td>↑</td>
-            </tr>
-            <tr>
-              <td>RC2: Порог 0.5%</td>
-              <td class="num coef-pos">+0.04270</td>
-              <td class="num">0.003080</td>
-              <td class="num"><span class="sig-3">***</span></td>
-              <td class="num coef-neg">−0.20669</td>
-              <td class="num">0.008480</td>
-              <td class="num"><span class="sig-3">***</span></td>
-              <td>↑</td>
-            </tr>
-            <tr>
-              <td>RC3: Без выбросов</td>
-              <td class="num coef-pos">+0.01465</td>
-              <td class="num">0.001295</td>
-              <td class="num"><span class="sig-3">***</span></td>
-              <td class="num coef-neg">−0.05440</td>
-              <td class="num">0.003652</td>
-              <td class="num"><span class="sig-3">***</span></td>
-              <td>↑</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="callout callout-note">
-        <div class="callout-icon">✅</div>
-        <div>
-          <strong>Аномалия смены знака исчезла.</strong> До исправления
-          β(Magnit) в M1 был отрицательным (−0.87%), а в RC1 — положительным
-          (+0.36%), что создавало противоречие. Теперь β(Magnit)
-          <strong>положителен во всех четырёх спецификациях</strong> (+0.39% в
-          RC1, +1.70% в M1, +4.27% в RC2, +1.47% в RC3). Результаты полностью
-          согласованы.
-        </div>
-      </div>
-
-      <div class="callout callout-key">
-        <div class="callout-icon">💡</div>
-        <div>
-          <strong>Интерпретация β(Magnit) по спецификациям:</strong>
-          RC1 показывает наименьший эффект (+0.39%) — регулярные цены Магнита
-          растут лишь чуть быстрее. M1 и RC3 дают +1.5–1.7% — это эффект с
-          учётом окончания промо (возврат к регулярной цене). RC2 даёт +4.3% —
-          при низком пороге захватываются мелкие ценовые движения, усиливая
-          эффект. Диапазон устойчив по знаку: Магнит стабильно показывает
-          бо́льший рост лог-изменений эффективной цены.
-        </div>
-      </div>
-
-      <div class="callout callout-warn">
-        <div class="callout-icon">⚠️</div>
-        <div>
-          Эффект промо в RC2 существенно больше (−20.7% против −6.4% в M1) — при
-          пороге 0.5% в выборку попадает больше «мелких» изменений, среди
-          которых промо-скидки статистически сильнее. Это нормальный артефакт
-          выбора порога, а не реальное различие.
-        </div>
-      </div>
-
-      <div class="fig-wrap">
-        <img
-          src="plots/10_robustness_coef_plot.png"
-          alt="Robustness коэффициенты"
-          loading="lazy"
-        />
-        <div class="fig-caption">
-          <strong>График 10 · 10_robustness_coef_plot.png</strong> —
-          Коэффициент-плот по всем спецификациям. Все точки β(Magnit) правее
-          нуля — знак устойчив. β(Promo) стабильно отрицателен.
-        </div>
-      </div>
+    <div class="fig-wrap">
+      <img src="plots/05_intercategory_cor_magnit.png" alt="Корреляции Магнит" loading="lazy"/>
+      <div class="fig-caption"><strong>График 05 &middot; Магнит</strong> &mdash; Пёстрая тепловая карта: категории действуют независимо.</div>
     </div>
+  </div>
+</div>
 
-    <!-- ══════════════════════ CONCLUSIONS ══════════════════════ -->
-    <div class="conclusions" id="conclusions">
-      <h2>Ключевые выводы</h2>
+<!-- SECTION 3: VARIANCE -->
+<div class="section" id="s3">
+  <h2><span class="section-number">03</span>Декомпозиция дисперсии</h2>
+  <div class="section-desc">
+    Таблица: <code>06_variance_decomposition.csv/.html</code> &nbsp;|&nbsp; График: <code>06_variance_decomposition.png</code>
+  </div>
+  <div class="method-box">
+    <strong>Методология.</strong> Последовательные модели через <code>fixest::feols</code>:
+    <code>&Delta;_eff ~ 1 | сеть</code>, <code>~ 1 | категория</code>, <code>~ 1 | магазин</code>,
+    <code>~ 1 | сеть+категория</code>, <code>~ 1 | сеть+категория+магазин</code>.
+    Инкрементальный &Delta;R&sup2; показывает &laquo;чистый&raquo; вклад каждого уровня.
+  </div>
 
-      <div class="conclusion-item">
-        <div class="conclusion-num">1</div>
-        <div class="conclusion-text">
-          <strong>Цены Пятёрочки менее «липкие» по частоте</strong> (32.4% vs
-          20.9%), но Магнит компенсирует это крупными изменениями (+18.0% за
-          событие vs +12.5%). Медианный спелл Магнита — 5.3 нед, Пятёрочки — 3.9
-          нед.
-        </div>
-      </div>
+  <h3>Таблица 06 <code style="font-size:11px">06_variance_decomposition.csv</code></h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr>
+        <th>Модель (FE)</th><th class="num">R&sup2; adj.</th>
+        <th class="num">&Delta;R&sup2; (инкрем.)</th><th>Вывод</th>
+      </tr></thead>
+      <tbody><tr><td>Только сеть</td><td class="num">0.026%</td><td class="num">0.026%</td><td>Наименьший вклад из трёх</td></tr>
+<tr><td>Только категория</td><td class="num">0.111%</td><td class="num">0.111%</td><td>Наибольший вклад</td></tr>
+<tr><td>Только магазин</td><td class="num">0.029%</td><td class="num">0.029%</td><td>Вклад магазина</td></tr>
+<tr><td>Сеть + Категория</td><td class="num">0.110%</td><td class="num">0.084%</td><td>Добавление категории к сети</td></tr>
+<tr class="highlight"><td>Сеть + Категория + Магазин</td><td class="num bold">0.114%</td><td class="num">0.003%</td><td>Добавление категории к сети</td></tr></tbody>
+    </table>
+  </div>
 
-      <div class="conclusion-item">
-        <div class="conclusion-num">2</div>
-        <div class="conclusion-text">
-          <strong>Магнит — более промо-активная сеть:</strong> 37.7% периодов с
-          акциями и глубина скидки 25.1%, против 13.2% и 20.2% у Пятёрочки. До
-          исправления данных это не было видно. Магнит практикует стратегию
-          Hi-Lo: стабильные регулярные цены + агрессивные краткосрочные промо.
-        </div>
-      </div>
-
-      <div class="conclusion-item">
-        <div class="conclusion-num">3</div>
-        <div class="conclusion-text">
-          <strong>Структура ценообразования различается принципиально:</strong>
-          Пятёрочка — централизованная (медиана межкатегорийной корреляции 0.72,
-          100% пар положительны); Магнит — децентрализованная (медиана 0.12,
-          53.6% положительных). Это согласуется со стратегией Hi-Lo: промо
-          запускаются по категориям независимо.
-        </div>
-      </div>
-
-      <div class="conclusion-item">
-        <div class="conclusion-num">4</div>
-        <div class="conclusion-text">
-          <strong>Категория объясняет изменчивость цен больше всего</strong> (R²
-          = 0.111%), далее — магазин (0.029%) и сеть (0.026%). Суммарно — лишь
-          0.114%: большинство изменений идиосинкратичны. Этот результат не
-          изменился после исправления данных.
-        </div>
-      </div>
-
-      <div class="conclusion-item">
-        <div class="conclusion-num">5</div>
-        <div class="conclusion-text">
-          <strong>Три типа категорий (K=3):</strong> «активные» (Мясо, Овощи,
-          Рыба, Хлеб — высокая частота и изменчивость), «умеренные» (Бакалея,
-          Вода, Молочный), «стабильные цены — активное промо» (Консервы: высший
-          promo_share 53.2% при минимальной частоте изменений 11.7%).
-        </div>
-      </div>
-
-      <div class="conclusion-item">
-        <div class="conclusion-num">6</div>
-        <div class="conclusion-text">
-          <strong>Панельная регрессия (N = 383 982):</strong> промо снижает
-          эффективную цену на <strong>~6.4%</strong> за период (высокозначимо,
-          R² = 6.6%). Магнит демонстрирует более высокие log-изменения
-          эффективной цены на <strong>+1.70%</strong> относительно Пятёрочки —
-          следствие резких скачков назад при окончании глубоких промо.
-        </div>
-      </div>
-
-      <div class="conclusion-item">
-        <div class="conclusion-num">7</div>
-        <div class="conclusion-text">
-          <strong>Робастность — значительно улучшилась:</strong> после
-          исправления данных β(Magnit) устойчиво положителен во всех 4
-          спецификациях (RC1, RC2, RC3, M1). Аномалия смены знака, которая
-          наблюдалась ранее, исчезла. Эффект промо стабилен от −5.4% до −20.7% в
-          зависимости от порога.
-        </div>
-      </div>
+  <div class="callout callout-note">
+    <div class="callout-icon">&#x1F4CA;</div>
+    <div>
+      Суммарно FE объясняют лишь 0.114% вариации &Delta;_eff &mdash; большинство изменений идиосинкратичны.
+      Наибольший вклад вносит <strong>категория товара</strong> (0.111% отдельно).
     </div>
-  </body>
+  </div>
+
+  <div class="fig-wrap" style="max-width:600px">
+    <img src="plots/06_variance_decomposition.png" alt="Декомпозиция дисперсии" loading="lazy"/>
+    <div class="fig-caption"><strong>График 06 &middot; 06_variance_decomposition.png</strong> &mdash; Bar chart трёх &laquo;чистых&raquo; вкладов в R&sup2; adj.</div>
+  </div>
+</div>
+
+<!-- SECTION 4: CLUSTERING -->
+<div class="section" id="s4">
+  <h2><span class="section-number">04</span>Кластеризация категорий</h2>
+  <div class="section-desc">
+    Таблицы: <code>07_cluster_centroids.csv/.html</code> &middot; <code>08_category_cluster_assignment.csv</code>
+    &nbsp;|&nbsp; Графики: <code>07_silhouette_scores.png</code> &middot; <code>08_cluster_pca.png</code>
+  </div>
+  <div class="method-box">
+    <strong>Методология.</strong> Признаки: <code>freq_effective</code>, <code>avg_change_effective</code>,
+    <code>promo_share</code>, <code>volatility</code>, <code>avg_spell_length</code> &mdash;
+    взвешенное среднее по обеим сетям. Матрица стандартизирована (<code>scale()</code>).
+    K выбирается по максимуму среднего silhouette score. K-means: <code>set.seed(42)</code>, <code>nstart=50</code>.
+  </div>
+
+  <div class="fig-wrap" style="max-width:500px">
+    <img src="plots/07_silhouette_scores.png" alt="Silhouette scores" loading="lazy"/>
+    <div class="fig-caption"><strong>График 07 &middot; 07_silhouette_scores.png</strong> &mdash; Оптимальное число кластеров K=3 (максимум silhouette score).</div>
+  </div>
+
+  <h3>Таблица 07 &mdash; Центроиды кластеров (K=3) <code style="font-size:11px">07_cluster_centroids.csv</code></h3>
+  <div class="cluster-grid"><div class="cluster-card"><div class="cluster-num">Кластер 1</div><h4>&laquo;Высокая ценовая активность&raquo;</h4><div class="cats">Мясо и птица, Овощи и фрукты, Рыба и морепродукты, Хлеб и выпечка</div><div class="cluster-stat"><span class="k">Частота ΔP эфф.</span><span class="v">34.3%</span></div><div class="cluster-stat"><span class="k">Ср. размер ΔP</span><span class="v">18.6%</span></div><div class="cluster-stat"><span class="k">Доля акций</span><span class="v">26.4%</span></div><div class="cluster-stat"><span class="k">Волатильность</span><span class="v">14.2%</span></div><div class="cluster-stat"><span class="k">Ср. спелл</span><span class="v">4.1 нед</span></div></div>
+<div class="cluster-card"><div class="cluster-num">Кластер 2</div><h4>&laquo;Умеренная динамика&raquo;</h4><div class="cats">Бакалея, Вода и напитки, Молочный прилавок</div><div class="cluster-stat"><span class="k">Частота ΔP эфф.</span><span class="v">25.4%</span></div><div class="cluster-stat"><span class="k">Ср. размер ΔP</span><span class="v">13.1%</span></div><div class="cluster-stat"><span class="k">Доля акций</span><span class="v">20.8%</span></div><div class="cluster-stat"><span class="k">Волатильность</span><span class="v">8.6%</span></div><div class="cluster-stat"><span class="k">Ср. спелл</span><span class="v">4.8 нед</span></div></div>
+<div class="cluster-card"><div class="cluster-num">Кластер 3</div><h4>&laquo;Стабильные цены &mdash; активное промо&raquo;</h4><div class="cats">Консервы</div><div class="cluster-stat"><span class="k">Частота ΔP эфф.</span><span class="v">11.7%</span></div><div class="cluster-stat"><span class="k">Ср. размер ΔP</span><span class="v">13.8%</span></div><div class="cluster-stat"><span class="k">Доля акций</span><span class="v">53.2%</span></div><div class="cluster-stat"><span class="k">Волатильность</span><span class="v">6.4%</span></div><div class="cluster-stat"><span class="k">Ср. спелл</span><span class="v">6.6 нед</span></div></div></div>
+
+  <h3>Таблица 08 &mdash; Принадлежность категорий <code style="font-size:11px">08_category_cluster_assignment.csv</code></h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr>
+        <th>Категория</th><th class="num">Кластер</th>
+        <th class="num">Частота эфф.</th><th class="num">Ср. &Delta;P</th>
+        <th class="num">Акции</th><th class="num">Спелл, нед</th>
+      </tr></thead>
+      <tbody><tr><td>Мясо и птица</td><td class="num bold">1</td><td class="num">29.1%</td><td class="num">23.2%</td><td class="num">32.1%</td><td class="num">4.4</td></tr>
+<tr><td>Овощи и фрукты</td><td class="num bold">1</td><td class="num">42.0%</td><td class="num">16.6%</td><td class="num">15.0%</td><td class="num">3.6</td></tr>
+<tr><td>Рыба и морепродукты</td><td class="num bold">1</td><td class="num">34.4%</td><td class="num">17.4%</td><td class="num">39.4%</td><td class="num">4.3</td></tr>
+<tr><td>Хлеб и выпечка</td><td class="num bold">1</td><td class="num">31.6%</td><td class="num">17.4%</td><td class="num">19.2%</td><td class="num">4.2</td></tr>
+<tr><td>Бакалея</td><td class="num bold">2</td><td class="num">26.5%</td><td class="num">14.0%</td><td class="num">18.9%</td><td class="num">4.8</td></tr>
+<tr><td>Вода и напитки</td><td class="num bold">2</td><td class="num">26.9%</td><td class="num">12.9%</td><td class="num">14.9%</td><td class="num">4.6</td></tr>
+<tr><td>Молочный прилавок</td><td class="num bold">2</td><td class="num">22.6%</td><td class="num">12.3%</td><td class="num">28.5%</td><td class="num">5.0</td></tr>
+<tr class="highlight"><td>Консервы</td><td class="num bold">3</td><td class="num">11.7%</td><td class="num">13.8%</td><td class="num">53.2%</td><td class="num">6.6</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="fig-wrap">
+    <img src="plots/08_cluster_pca.png" alt="PCA кластеры" loading="lazy"/>
+    <div class="fig-caption"><strong>График 08 &middot; 08_cluster_pca.png</strong> &mdash; PCA-проекция категорий с кластерными оболочками (K=3).</div>
+  </div>
+</div>
+
+<!-- SECTION 5: REGRESSION -->
+<div class="section" id="s5">
+  <h2><span class="section-number">05</span>Панельная регрессия</h2>
+  <div class="section-desc">
+    Таблицы: <code>09_regression_coefs.csv</code> &middot; <code>09_regression_results.tex</code> &middot; <code>10_regression_gof.csv/.html</code>
+    &nbsp;|&nbsp; График: <code>09_coef_plot.png</code>
+  </div>
+  <div class="method-box">
+    <strong>M1:</strong> <code>&Delta;ln(P_eff) = &beta;&#x2081;&middot;Magnit + &beta;&#x2082;&middot;Promo + &alpha;_cat + &alpha;_week + &epsilon;</code><br/>
+    <strong>M2:</strong> <code>&Delta;ln(P_eff) = &beta;&#x2082;&middot;Promo | cat + week + store</code><br/>
+    <strong>M3 (только Пятёрочка):</strong> <code>&Delta;ln(P_eff) = &beta;&#x2082;&middot;Promo | cat + week</code><br/>
+    SE кластеризованы по магазину (<code>fixest::feols</code>). FE по кросс-цепочечному имени категории.
+  </div>
+
+  <h3>Таблица 09 &mdash; Коэффициенты <code style="font-size:11px">09_regression_coefs.csv</code></h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr>
+        <th>Регрессор</th><th class="num">Оценка &beta;</th>
+        <th class="num">Ст. ошибка</th><th class="num">t-стат.</th>
+        <th class="num">p-value</th><th>Спецификация</th>
+      </tr></thead>
+      <tbody>
+        <tr class="highlight">
+          <td><strong>Магнит (vs Пятёрочка)</strong></td>
+          <td class="num"><span class="coef-pos bold">+0.0169</span></td>
+          <td class="num">0.001</td>
+          <td class="num">11.83</td>
+          <td class="num"><span class="sig-3">***</span></td>
+          <td>M1: FE(cat + week)</td>
+        </tr>
+        <tr class="highlight">
+          <td><strong>Промо-акция</strong></td>
+          <td class="num"><span class="coef-neg bold">-0.0635</span></td>
+          <td class="num">0.003</td>
+          <td class="num">-19.54</td>
+          <td class="num"><span class="sig-3">***</span></td>
+          <td>M1: FE(cat + week)</td>
+        </tr>
+        <tr>
+          <td>Промо-акция</td>
+          <td class="num"><span class="coef-neg">-0.0647</span></td>
+          <td class="num">0.003</td>
+          <td class="num">-20.18</td>
+          <td class="num"><span class="sig-3">***</span></td>
+          <td>M2: FE(cat + week + store)</td>
+        </tr>
+        <tr>
+          <td>Промо-акция</td>
+          <td class="num"><span class="coef-neg">-0.0846</span></td>
+          <td class="num">0.003</td>
+          <td class="num">-27.61</td>
+          <td class="num"><span class="sig-3">***</span></td>
+          <td>M3: Только Пятёрочка FE(cat + week)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-key">
+    <div class="callout-icon">&#x1F4C8;</div>
+    <div>
+      <strong>&beta;(Magnit) = <span class="coef-pos">+0.0169</span>***</strong> &mdash;
+      Магнит демонстрирует на 1.69% п.п. бо&#769;льший прирост log-цены — следствие резкого возврата к регулярной цене после глубоких промо.<br/><br/>
+      <strong>&beta;(Promo) = <span class="coef-neg">-0.0635</span>***</strong> &mdash;
+      в акционный период эффективная цена снижается на 6.4% (log-изменение).
+      Коэффициент устойчив в M1 (6.4%) и M2 (6.5%).
+    </div>
+  </div>
+
+  <h3>Таблица 10 &mdash; Качество подгонки <code style="font-size:11px">10_regression_gof.csv</code></h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr>
+        <th>Спецификация</th><th class="num">N</th>
+        <th class="num">R&sup2; within</th><th class="num">R&sup2; adj.</th>
+      </tr></thead>
+      <tbody>
+        <tr><td>M1 &mdash; Pooled FE(cat+week)</td><td class="num">383 982</td><td class="num bold">6.63%</td><td class="num">6.62%</td></tr>
+        <tr><td>M2 &mdash; FE(cat+week+store)</td><td class="num">383 982</td><td class="num">6.74%</td><td class="num">6.73%</td></tr>
+        <tr class="highlight"><td>M3 &mdash; Только Пятёрочка</td><td class="num">212 239</td><td class="num">8.85%</td><td class="num">8.85%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="fig-wrap">
+    <img src="plots/09_coef_plot.png" alt="Коэффициентный граф" loading="lazy"/>
+    <div class="fig-caption"><strong>График 09 &middot; 09_coef_plot.png</strong> &mdash; Коэффициентный граф с 95% ДИ по трём спецификациям.</div>
+  </div>
+</div>
+
+<!-- SECTION 6: ROBUSTNESS -->
+<div class="section" id="s6">
+  <h2><span class="section-number">06</span>Проверки устойчивости</h2>
+  <div class="section-desc">
+    Таблицы: <code>11_robustness_coefs.csv</code> &middot; <code>11_robustness_table.csv/.html</code>
+    &nbsp;|&nbsp; График: <code>10_robustness_coef_plot.png</code>
+  </div>
+  <div class="method-box">
+    <strong>RC1 &mdash; Только регулярные цены:</strong> <code>log(P_reg / P_reg_lag)</code>, промо исключены.<br/>
+    <strong>RC2: Порог 0.5%:</strong> смягчённый порог изменения вместо основных 1%.<br/>
+    <strong>RC3 &mdash; Без выбросов:</strong> <code>|&Delta;ln(P)| &le; 50%</code>.
+  </div>
+
+  <h3>Таблица 11 &mdash; Сводная robustness <code style="font-size:11px">11_robustness_coefs.csv</code></h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr>
+        <th>Спецификация</th>
+        <th class="num">&beta;(Magnit)</th><th class="num">SE</th><th class="num">p</th>
+        <th class="num">&beta;(Promo)</th><th class="num">SE</th><th class="num">p</th>
+        <th>Знак Magnit</th>
+      </tr></thead>
+      <tbody><tr class="highlight"><td><strong>Основная (M1)</strong></td><td class="num"><span class="coef-pos bold">+0.0169</span></td><td class="num">0.001</td><td class="num"><span class="sig-3">***</span></td><td class="num"><span class="coef-neg bold">-0.0635</span></td><td class="num">0.003</td><td class="num"><span class="sig-3">***</span></td><td>&uarr;</td></tr>
+<tr><td>RC1: Только рег. цены</td><td class="num"><span class="coef-pos">+0.0039</span></td><td class="num">0.000</td><td class="num"><span class="sig-3">***</span></td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td>&uarr;</td></tr>
+<tr><td>RC2: Порог 0.5%</td><td class="num"><span class="coef-pos">+0.0427</span></td><td class="num">0.003</td><td class="num"><span class="sig-3">***</span></td><td class="num"><span class="coef-neg">-0.2067</span></td><td class="num">0.008</td><td class="num"><span class="sig-3">***</span></td><td>&uarr;</td></tr>
+<tr><td>RC3: Без выбросов</td><td class="num"><span class="coef-pos">+0.0147</span></td><td class="num">0.001</td><td class="num"><span class="sig-3">***</span></td><td class="num"><span class="coef-neg">-0.0544</span></td><td class="num">0.004</td><td class="num"><span class="sig-3">***</span></td><td>&uarr;</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-note"><div class="callout-icon">&#x2705;</div><div><strong>Знак β(Magnit) сохраняется во всех спецификациях</strong> (положительный в M1, RC1, RC2, RC3). Результат устойчив к выбору порога и выборки.</div></div>
+
+  <div class="fig-wrap">
+    <img src="plots/10_robustness_coef_plot.png" alt="Robustness коэффициенты" loading="lazy"/>
+    <div class="fig-caption"><strong>График 10 &middot; 10_robustness_coef_plot.png</strong> &mdash; Коэффициент-плот по всем спецификациям.</div>
+  </div>
+</div>
+
+<!-- CONCLUSIONS -->
+<div class="conclusions" id="conclusions">
+  <h2>Ключевые выводы</h2>
+
+  <div class="conclusion-item">
+    <div class="conclusion-num">1</div>
+    <div class="conclusion-text">
+      <strong>Цены Пятёрочки менее &laquo;липкие&raquo; по частоте</strong>
+      (32.4% vs 20.9%), но Магнит компенсирует это крупными изменениями
+      (18.0% за событие vs 12.5%). Медианный спелл Магнита &mdash; 5.3 нед, Пятёрочки &mdash; 4.2 нед.
+    </div>
+  </div>
+
+  <div class="conclusion-item">
+    <div class="conclusion-num">2</div>
+    <div class="conclusion-text">
+      <strong>Магнит &mdash; более промо-активная сеть:</strong>
+      37.7% периодов с акциями и глубина скидки 25.1%,
+      против 13.2% и 20.2% у Пятёрочки.
+      Магнит практикует стратегию Hi-Lo: стабильные регулярные цены + агрессивные промо.
+    </div>
+  </div>
+
+  <div class="conclusion-item">
+    <div class="conclusion-num">3</div>
+    <div class="conclusion-text">
+      <strong>Структура ценообразования различается принципиально:</strong>
+      Пятёрочка &mdash; централизованная (медиана межкатегорийной корреляции 0.718,
+      100% пар положительны);
+      Магнит &mdash; децентрализованная (медиана 0.121, 54% положительных).
+    </div>
+  </div>
+
+  <div class="conclusion-item">
+    <div class="conclusion-num">4</div>
+    <div class="conclusion-text">
+      <strong>Категория объясняет изменчивость цен больше всего</strong>
+      (R&sup2; = 0.111% отдельно, 0.114% в полной модели).
+      Большинство изменений идиосинкратичны &mdash; не объясняются структурными факторами.
+    </div>
+  </div>
+
+  <div class="conclusion-item">
+    <div class="conclusion-num">5</div>
+    <div class="conclusion-text">
+      <strong>3 типа категорий (K-means):</strong>
+      кластеры выделены по частоте изменений, прomo-активности и длине ценовых спеллов.
+    </div>
+  </div>
+
+  <div class="conclusion-item">
+    <div class="conclusion-num">6</div>
+    <div class="conclusion-text">
+      <strong>Панельная регрессия (N = 383 982):</strong>
+      промо снижает эффективную цену на <strong>~6.4%</strong> за период (высокозначимо, R&sup2; = 6.6%).
+      Магнит демонстрирует на 1.69% п.п. бо&#769;льший прирост log-цены — следствие резкого возврата к регулярной цене после глубоких промо.
+    </div>
+  </div>
+
+  <div class="conclusion-item">
+    <div class="conclusion-num">7</div>
+    <div class="conclusion-text">
+      <strong>Робастность:</strong>
+      эффект промо стабилен во всех трёх проверках (RC1&ndash;RC3).
+      Знак &beta;(Magnit) сохраняется во всех спецификациях &mdash; результат устойчив.
+    </div>
+  </div>
+</div>
+
+<footer>
+  Сгенерировано автоматически &middot; scripts/08_report.R &middot; 2026-05-23 18:34 &middot;
+  Данные: 26.03.2026 &ndash; 21.05.2026
+</footer>
+
+</body>
 </html>
