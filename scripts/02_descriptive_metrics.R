@@ -196,7 +196,7 @@ p_freq <- stickiness %>%
   coord_flip() +
   labs(
     title    = "Частота изменения эффективной цены по категориям",
-    subtitle = glue("Порог значимого изменения: {CHANGE_THRESHOLD * 100}% | Период: 8 недель"),
+    subtitle = glue("Порог значимого изменения: {CHANGE_THRESHOLD * 100}% | Период: 10 недель"),
     x    = NULL,
     y    = "Доля недель с изменением цены",
     fill = "Сеть"
