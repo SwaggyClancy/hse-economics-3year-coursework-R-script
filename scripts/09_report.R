@@ -2,7 +2,7 @@
 # Читает CSV из output/tables/ и генерирует output/report.html.
 # Запускается из run_all.R или вручную (нужен panel в памяти или panel.rds).
 
-message("\n[08] Генерация HTML-отчёта...")
+message("\n[09] Генерация HTML-отчёта...")
 suppressPackageStartupMessages(library(glue))
 
 # ── Загрузка данных ──────────────────────────────────────────────────────────
@@ -407,6 +407,7 @@ html_out <- glue('<!doctype html>
     <li><a href="#s4">Кластеризация категорий (K={best_k})</a></li>
     <li><a href="#s5">Панельная регрессия</a></li>
     <li><a href="#s6">Проверки устойчивости</a></li>
+    <li><a href="#s7">Регрессии на частоту изменений (LPM, Granger, AR, RF)</a></li>
     <li><a href="#conclusions">Ключевые выводы</a></li>
   </ol>
 </div>
@@ -416,7 +417,7 @@ html_out <- glue('<!doctype html>
   <h2><span class="section-number">01</span>Описательные метрики ценовой липкости</h2>
   <div class="section-desc">
     Таблицы: <code>01_chain_stickiness.csv/.html</code> &middot; <code>02_category_stickiness.csv/.html</code>
-    &nbsp;|&nbsp; Графики: <code>01_freq_by_category.png</code> &middot; <code>02_promo_vs_freq.png</code> &middot; <code>03_spell_distribution.png</code>
+    &nbsp;|&nbsp; Графики: <code>01</code>&ndash;<code>07_*.png</code> (частота, спеллы, гистограммы эффективной цены)
   </div>
   <div class="method-box">
     <strong>Методология.</strong> Для каждой пары (товар, неделя):
@@ -495,7 +496,25 @@ html_out <- glue('<!doctype html>
   </div>
   <div class="fig-wrap">
     <img src="plots/03_spell_distribution.png" alt="Распределение спеллов" loading="lazy"/>
-    <div class="fig-caption"><strong>График 03 &middot; 03_spell_distribution.png</strong> &mdash; Гистограмма длительности ценовых спеллов (недели) по сетям.</div>
+    <div class="fig-caption"><strong>График 03</strong> &mdash; Длительность ценовых спеллов (недели без изменений) по <strong>эффективной цене</strong>.</div>
+  </div>
+  <div class="fig-wrap">
+    <img src="plots/04_freq_hist_by_chain.png" alt="Гистограмма частоты по сетям" loading="lazy"/>
+    <div class="fig-caption"><strong>График 04</strong> &mdash; Распределение частоты изменений <strong>эффективной цены</strong> по товарам. U-образность у Магнита = два типа товаров (стабильные и акционные).</div>
+  </div>
+  <div class="fig-grid">
+    <div class="fig-wrap">
+      <img src="plots/05_freq_density_combined.png" alt="Плотность частоты" loading="lazy"/>
+      <div class="fig-caption"><strong>График 05</strong> &mdash; Плотность распределения по <strong>эффективной цене</strong>: сравнение форм двух сетей.</div>
+    </div>
+    <div class="fig-wrap">
+      <img src="plots/07_freq_eff_vs_reg.png" alt="Эффективная vs регулярная" loading="lazy"/>
+      <div class="fig-caption"><strong>График 07</strong> &mdash; <strong>Эффективная vs Регулярная цена</strong>: как промо меняет форму распределения частоты изменений.</div>
+    </div>
+  </div>
+  <div class="fig-wrap">
+    <img src="plots/06_freq_hist_by_category.png" alt="Гистограммы по категориям" loading="lazy"/>
+    <div class="fig-caption"><strong>График 06</strong> &mdash; Гистограмма частоты изменений <strong>эффективной цены</strong> по каждой категории отдельно. Красный = Пятёрочка, розовый = Магнит.</div>
   </div>
 </div>
 
@@ -504,7 +523,7 @@ html_out <- glue('<!doctype html>
   <h2><span class="section-number">02</span>Корреляции и синхронность</h2>
   <div class="section-desc">
     Таблицы: <code>03_cross_chain_correlations.csv/.html</code> &middot; <code>05_intercategory_summary.csv</code>
-    &nbsp;|&nbsp; Графики: <code>04_intercategory_cor_pyaterochka.png</code> &middot; <code>05_intercategory_cor_magnit.png</code>
+    &nbsp;|&nbsp; Графики: <code>08_intercategory_cor_pyaterochka.png</code> &middot; <code>09_intercategory_cor_magnit.png</code> &middot; <code>10_intercategory_cor_combined.png</code>
   </div>
   <div class="method-box">
     <strong>Методология.</strong>
@@ -560,13 +579,17 @@ html_out <- glue('<!doctype html>
 
   <div class="fig-grid">
     <div class="fig-wrap">
-      <img src="plots/04_intercategory_cor_pyaterochka.png" alt="Корреляции Пятёрочка" loading="lazy"/>
-      <div class="fig-caption"><strong>График 04 &middot; Пятёрочка</strong> &mdash; Тепловая карта попарных корреляций. Централизованное ценообразование.</div>
+      <img src="plots/08_intercategory_cor_pyaterochka.png" alt="Корреляции Пятёрочка" loading="lazy"/>
+      <div class="fig-caption"><strong>Пятёрочка</strong> &mdash; Красный = положительная корреляция, синий = отрицательная. Централизованное ценообразование.</div>
     </div>
     <div class="fig-wrap">
-      <img src="plots/05_intercategory_cor_magnit.png" alt="Корреляции Магнит" loading="lazy"/>
-      <div class="fig-caption"><strong>График 05 &middot; Магнит</strong> &mdash; Пёстрая тепловая карта: категории действуют независимо.</div>
+      <img src="plots/09_intercategory_cor_magnit.png" alt="Корреляции Магнит" loading="lazy"/>
+      <div class="fig-caption"><strong>Магнит</strong> &mdash; Пёстрая карта: категории принимают промо-решения независимо.</div>
     </div>
+  </div>
+  <div class="fig-wrap">
+    <img src="plots/10_intercategory_cor_combined.png" alt="Корреляции обе сети" loading="lazy"/>
+    <div class="fig-caption"><strong>Обе сети вместе (усреднено)</strong> &mdash; Частота изменений усреднена по Пятёрочке и Магниту. Показывает «общерыночный» паттерн синхронности категорий.</div>
   </div>
 </div>
 
@@ -574,7 +597,7 @@ html_out <- glue('<!doctype html>
 <div class="section" id="s3">
   <h2><span class="section-number">03</span>Декомпозиция дисперсии</h2>
   <div class="section-desc">
-    Таблица: <code>06_variance_decomposition.csv/.html</code> &nbsp;|&nbsp; График: <code>06_variance_decomposition.png</code>
+    Таблица: <code>06_variance_decomposition.csv/.html</code> &nbsp;|&nbsp; График: <code>11_variance_decomposition.png</code>
   </div>
   <div class="method-box">
     <strong>Методология.</strong> Последовательные модели через <code>fixest::feols</code>:
@@ -603,8 +626,8 @@ html_out <- glue('<!doctype html>
   </div>
 
   <div class="fig-wrap" style="max-width:600px">
-    <img src="plots/06_variance_decomposition.png" alt="Декомпозиция дисперсии" loading="lazy"/>
-    <div class="fig-caption"><strong>График 06 &middot; 06_variance_decomposition.png</strong> &mdash; Bar chart трёх &laquo;чистых&raquo; вкладов в R&sup2; adj.</div>
+    <img src="plots/11_variance_decomposition.png" alt="Декомпозиция дисперсии" loading="lazy"/>
+    <div class="fig-caption"><strong>График 11 &middot; 11_variance_decomposition.png</strong> &mdash; Bar chart трёх &laquo;чистых&raquo; вкладов в R&sup2; adj.</div>
   </div>
 </div>
 
@@ -613,7 +636,7 @@ html_out <- glue('<!doctype html>
   <h2><span class="section-number">04</span>Кластеризация категорий</h2>
   <div class="section-desc">
     Таблицы: <code>07_cluster_centroids.csv/.html</code> &middot; <code>08_category_cluster_assignment.csv</code>
-    &nbsp;|&nbsp; Графики: <code>07_silhouette_scores.png</code> &middot; <code>08_cluster_pca.png</code>
+    &nbsp;|&nbsp; Графики: <code>12_silhouette_scores.png</code> &middot; <code>13_cluster_pca.png</code>
   </div>
   <div class="method-box">
     <strong>Методология.</strong> Признаки: <code>freq_effective</code>, <code>avg_change_effective</code>,
@@ -623,8 +646,8 @@ html_out <- glue('<!doctype html>
   </div>
 
   <div class="fig-wrap" style="max-width:500px">
-    <img src="plots/07_silhouette_scores.png" alt="Silhouette scores" loading="lazy"/>
-    <div class="fig-caption"><strong>График 07 &middot; 07_silhouette_scores.png</strong> &mdash; Оптимальное число кластеров K={best_k} (максимум silhouette score).</div>
+    <img src="plots/12_silhouette_scores.png" alt="Silhouette scores" loading="lazy"/>
+    <div class="fig-caption"><strong>График 12 &middot; 12_silhouette_scores.png</strong> &mdash; Оптимальное число кластеров K={best_k} (максимум silhouette score).</div>
   </div>
 
   <h3>Таблица 07 &mdash; Центроиды кластеров (K={best_k}) <code style="font-size:11px">07_cluster_centroids.csv</code></h3>
@@ -643,8 +666,8 @@ html_out <- glue('<!doctype html>
   </div>
 
   <div class="fig-wrap">
-    <img src="plots/08_cluster_pca.png" alt="PCA кластеры" loading="lazy"/>
-    <div class="fig-caption"><strong>График 08 &middot; 08_cluster_pca.png</strong> &mdash; PCA-проекция категорий с кластерными оболочками (K={best_k}).</div>
+    <img src="plots/13_cluster_pca.png" alt="PCA кластеры" loading="lazy"/>
+    <div class="fig-caption"><strong>График 13 &middot; 13_cluster_pca.png</strong> &mdash; PCA-проекция категорий с кластерными оболочками (K={best_k}).</div>
   </div>
 </div>
 
@@ -652,8 +675,8 @@ html_out <- glue('<!doctype html>
 <div class="section" id="s5">
   <h2><span class="section-number">05</span>Панельная регрессия</h2>
   <div class="section-desc">
-    Таблицы: <code>09_regression_coefs.csv</code> &middot; <code>09_regression_results.tex</code> &middot; <code>10_regression_gof.csv/.html</code>
-    &nbsp;|&nbsp; График: <code>09_coef_plot.png</code>
+    Таблицы: <code>09_regression_coefs.csv/.html</code> &middot; <code>09_regression_results.tex</code> &middot; <code>10_regression_gof.csv/.html</code>
+    &nbsp;|&nbsp; Графики: <code>14_coef_m1.png</code> &middot; <code>15_coef_magnit.png</code> &middot; <code>16_coef_promo.png</code>
   </div>
   <div class="method-box">
     <strong>M1:</strong> <code>&Delta;ln(P_eff) = &beta;&#x2081;&middot;Magnit + &beta;&#x2082;&middot;Promo + &alpha;_cat + &alpha;_week + &epsilon;</code><br/>
@@ -734,8 +757,18 @@ html_out <- glue('<!doctype html>
   </div>
 
   <div class="fig-wrap">
-    <img src="plots/09_coef_plot.png" alt="Коэффициентный граф" loading="lazy"/>
-    <div class="fig-caption"><strong>График 09 &middot; 09_coef_plot.png</strong> &mdash; Коэффициентный граф с 95% ДИ по трём спецификациям.</div>
+    <img src="plots/14_coef_m1.png" alt="Коэффициентный граф M1" loading="lazy"/>
+    <div class="fig-caption"><strong>График 14</strong> &mdash; M1: оба коэффициента с 95% ДИ. Зависимая переменная: &Delta;ln(<strong>эффективной</strong> цены).</div>
+  </div>
+  <div class="fig-grid">
+    <div class="fig-wrap">
+      <img src="plots/15_coef_magnit.png" alt="β Магнит" loading="lazy"/>
+      <div class="fig-caption"><strong>График 15</strong> &mdash; &beta;(Магнит) из M1: на сколько % отличается динамика <strong>эффективной</strong> цены в Магните от Пятёрочки.</div>
+    </div>
+    <div class="fig-wrap">
+      <img src="plots/16_coef_promo.png" alt="β Промо сравнение" loading="lazy"/>
+      <div class="fig-caption"><strong>График 16</strong> &mdash; &beta;(Промо) по трём спецификациям: насколько промо снижает <strong>эффективную</strong> цену.</div>
+    </div>
   </div>
 </div>
 
@@ -744,7 +777,7 @@ html_out <- glue('<!doctype html>
   <h2><span class="section-number">06</span>Проверки устойчивости</h2>
   <div class="section-desc">
     Таблицы: <code>11_robustness_coefs.csv</code> &middot; <code>11_robustness_table.csv/.html</code>
-    &nbsp;|&nbsp; График: <code>10_robustness_coef_plot.png</code>
+    &nbsp;|&nbsp; Графики: <code>18_rc_magnit.png</code> &middot; <code>19_rc_promo.png</code>
   </div>
   <div class="method-box">
     <strong>RC1 &mdash; Только регулярные цены:</strong> <code>log(P_reg / P_reg_lag)</code>, промо исключены.<br/>
@@ -767,9 +800,72 @@ html_out <- glue('<!doctype html>
 
   {rc_consistency}
 
+  <div class="fig-grid">
+    <div class="fig-wrap">
+      <img src="plots/18_rc_magnit.png" alt="RC β Магнит" loading="lazy"/>
+      <div class="fig-caption"><strong>График 18</strong> &mdash; &beta;(Магнит) по спецификациям. RC1: <strong>регулярная</strong> цена; RC2/RC3: <strong>эффективная</strong>.</div>
+    </div>
+    <div class="fig-wrap">
+      <img src="plots/19_rc_promo.png" alt="RC β Промо" loading="lazy"/>
+      <div class="fig-caption"><strong>График 19</strong> &mdash; &beta;(Промо) по спецификациям. Зависимая: &Delta;ln(<strong>эффективной</strong> цены). RC1 исключён (нет is_promo).</div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 7: FREQUENCY REGRESSIONS -->
+<div class="section" id="s7">
+  <h2><span class="section-number">07</span>Регрессии на частоту изменений (скрипт 08)</h2>
+  <div class="section-desc">
+    Таблицы: <code>12_top5_correlations.csv</code> &middot; <code>13_lpm_gof.csv</code>
+    &middot; <code>14_granger_coefs.csv</code> &middot; <code>15_ar_gof.csv</code>
+    &nbsp;|&nbsp; Графики: <code>20a_lpm_magnit.png</code> &middot; <code>20b_lpm_promo.png</code>
+    &middot; <code>21a_granger_pya.png</code> &middot; <code>21b_granger_mag.png</code>
+    &middot; <code>22a_ar_lag.png</code> &middot; <code>22b_ar_promo.png</code>
+    &middot; <code>23_rf_importance.png</code>
+  </div>
+  <div class="method-box">
+    <strong>LPM (Линейная модель вероятности).</strong>
+    Зависимая: <code>changed_effective</code> (0/1) &mdash; изменилась ли <strong>эффективная</strong> цена.
+    Интерпретация: &beta; = изменение вероятности изменения цены в п.п.<br/>
+    <strong>Granger.</strong> <code>chg_rate_Pya_t ~ lag(chg_rate_Mag) + lag(chg_rate_Pya)</code> &mdash;
+    предсказывает ли прошлая частота Магнита текущую Пятёрочки?<br/>
+    <strong>AR(1).</strong> <code>changed_effective_t ~ changed_effective_{{t-1}}</code> | FE(кат+нед) &mdash;
+    инерция или торможение ценовых изменений?
+  </div>
+
+  <div class="fig-grid">
+    <div class="fig-wrap">
+      <img src="plots/20a_lpm_magnit.png" alt="LPM β Магнит" loading="lazy"/>
+      <div class="fig-caption"><strong>График 20a &middot; LPM — β(Магнит)</strong> &mdash; Разница вероятности изменения эффективной цены между сетями (LPM-M1).</div>
+    </div>
+    <div class="fig-wrap">
+      <img src="plots/20b_lpm_promo.png" alt="LPM β Промо" loading="lazy"/>
+      <div class="fig-caption"><strong>График 20b &middot; LPM — β(Промо)</strong> &mdash; На сколько п.п. акция повышает вероятность изменения цены (три спецификации LPM).</div>
+    </div>
+  </div>
+  <div class="fig-grid">
+    <div class="fig-wrap">
+      <img src="plots/21a_granger_pya.png" alt="Granger: Пятёрочка" loading="lazy"/>
+      <div class="fig-caption"><strong>График 21a &middot; Granger → Пятёрочка</strong> &mdash; Значим ли лаг Магнита для предсказания частоты изменений Пятёрочки?</div>
+    </div>
+    <div class="fig-wrap">
+      <img src="plots/21b_granger_mag.png" alt="Granger: Магнит" loading="lazy"/>
+      <div class="fig-caption"><strong>График 21b &middot; Granger → Магнит</strong> &mdash; Значим ли лаг Пятёрочки для предсказания частоты изменений Магнита?</div>
+    </div>
+  </div>
+  <div class="fig-grid">
+    <div class="fig-wrap">
+      <img src="plots/22a_ar_lag.png" alt="AR(1) лаг" loading="lazy"/>
+      <div class="fig-caption"><strong>График 22a &middot; AR(1) — ρ</strong> &mdash; ρ &lt; 0 = ценовое торможение (пауза после изменения); ρ &gt; 0 = инерция.</div>
+    </div>
+    <div class="fig-wrap">
+      <img src="plots/22b_ar_promo.png" alt="AR(1) промо" loading="lazy"/>
+      <div class="fig-caption"><strong>График 22b &middot; AR(1) — β(Промо)</strong> &mdash; Вклад акции сверх авторегрессионного эффекта.</div>
+    </div>
+  </div>
   <div class="fig-wrap">
-    <img src="plots/10_robustness_coef_plot.png" alt="Robustness коэффициенты" loading="lazy"/>
-    <div class="fig-caption"><strong>График 10 &middot; 10_robustness_coef_plot.png</strong> &mdash; Коэффициент-плот по всем спецификациям.</div>
+    <img src="plots/23_rf_importance.png" alt="Random Forest важность" loading="lazy"/>
+    <div class="fig-caption"><strong>График 23 &middot; Random Forest</strong> &mdash; Важность групп переменных для предсказания изменения <strong>эффективной</strong> цены.</div>
   </div>
 </div>
 
@@ -843,7 +939,7 @@ html_out <- glue('<!doctype html>
 </div>
 
 <footer>
-  Сгенерировано автоматически &middot; scripts/08_report.R &middot; {gen_time} &middot;
+  Сгенерировано автоматически &middot; scripts/09_report.R &middot; {gen_time} &middot;
   Данные: {date_start} &ndash; {date_end}
 </footer>
 

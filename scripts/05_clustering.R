@@ -1,4 +1,18 @@
 # ================== 05. CLUSTERING OF CATEGORIES ================================
+# При автономном запуске (вне run_all.R) загружаем пакеты и проверяем зависимости.
+suppressPackageStartupMessages({
+  library(tidyverse); library(glue); library(cluster); library(factoextra)
+  library(gt); library(gtExtras); library(scales)
+})
+
+if (!exists("stickiness"))
+  stop("Нет объекта 'stickiness'. Запустите скрипты 01–02 или используйте run_all.R")
+if (!exists("PATH_PLOTS"))
+  stop("Нет PATH_PLOTS. Запустите скрипт 01 или используйте run_all.R")
+
+# Минимальное число кластеров: силуэт иногда возвращает K=2 при малом числе
+# категорий. Принудительно задаём нижнюю границу.
+MIN_K <- 3
 
 message("\n[05] Кластеризация категорий...")
 
@@ -41,8 +55,14 @@ silhouette_scores <- map_dbl(k_range, function(k) {
   mean(sil[, 3])
 })
 
-best_k <- k_range[which.max(silhouette_scores)]
-message(glue("  Оптимальное число кластеров по silhouette: {best_k}"))
+best_k_sil <- k_range[which.max(silhouette_scores)]
+# Применяем минимум MIN_K: силуэт может вернуть K=2 при малом числе категорий,
+# но содержательно нас интересует не менее MIN_K кластеров.
+best_k <- max(best_k_sil, MIN_K)
+if (best_k > best_k_sil) {
+  message(glue("  Silhouette рекомендует K={best_k_sil}, применяем минимум MIN_K={MIN_K}"))
+}
+message(glue("  Финальное число кластеров: K={best_k}"))
 
 # График silhouette
 p_sil <- tibble(k = k_range, silhouette = silhouette_scores) %>%
@@ -51,12 +71,12 @@ p_sil <- tibble(k = k_range, silhouette = silhouette_scores) %>%
   geom_point(size = 3, colour = "#2c7bb6") +
   geom_vline(xintercept = best_k, linetype = "dashed", colour = "red") +
   labs(
-    title = "Выбор числа кластеров: средняя ширина силуэта",
+    title = "Выбор n кластеров: ср. ширина силуэта",
     x     = "Число кластеров k",
     y     = "Средний silhouette score"
   )
 
-ggsave(file.path(PATH_PLOTS, "07_silhouette_scores.png"),
+ggsave(file.path(PATH_PLOTS, "12_silhouette_scores.png"),
        p_sil, width = 7, height = 5, dpi = 150)
 
 # ── 5.3 Финальная кластеризация ───────────────────────────────────────────────
@@ -109,8 +129,8 @@ gt_clusters <- cluster_centroids %>%
 save_gt_table(gt_clusters, cluster_centroids, "07_cluster_centroids")
 
 # Таблица: какие категории в каких кластерах
-write_csv(cluster_features %>% select(category_name, cluster, everything()),
-          file.path(PATH_TABLES, "08_category_cluster_assignment.csv"))
+write_excel_csv(cluster_features %>% select(category_name, cluster, everything()),
+                file.path(PATH_TABLES, "08_category_cluster_assignment.csv"))
 
 # ── 5.4 Визуализация кластеров (PCA-биплот) ───────────────────────────────────
 p_clusters <- fviz_cluster(
@@ -124,7 +144,7 @@ p_clusters <- fviz_cluster(
   main          = glue("PCA-проекция кластеров категорий (K={best_k})")
 )
 
-ggsave(file.path(PATH_PLOTS, "08_cluster_pca.png"),
+ggsave(file.path(PATH_PLOTS, "13_cluster_pca.png"),
        p_clusters, width = 10, height = 7, dpi = 150)
 
 message("  Кластеризация завершена.")

@@ -13,6 +13,8 @@ message("\n[04] Декомпозиция дисперсии...")
 
 vd_data <- panel %>%
   filter(!is.na(delta_effective_pct)) %>%
+  # delta_eff = delta_effective_pct: относительное изменение ЭФФЕКТИВНОЙ цены
+  # (то, что платит покупатель — акционная если is_promo=TRUE, иначе регулярная)
   mutate(delta_eff = delta_effective_pct)
 
 # Регрессия только с индикаторами факторов
@@ -82,7 +84,7 @@ p_vd <- vd_table %>%
     y     = "R² adj."
   )
 
-ggsave(file.path(PATH_PLOTS, "06_variance_decomposition.png"),
+ggsave(file.path(PATH_PLOTS, "11_variance_decomposition.png"),
        p_vd, width = 9, height = 5, dpi = 150)
 
 message("  Декомпозиция завершена.")

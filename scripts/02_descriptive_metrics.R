@@ -57,26 +57,31 @@ stickiness <- panel %>%
     n_obs                = n(),
     n_products           = n_distinct(product_id),
 
-    freq_regular         = mean(changed_regular, na.rm = TRUE),
-    avg_change_regular   = mean(abs(delta_regular_pct[changed_regular]), na.rm = TRUE),
+    # ── Метрики по РЕГУЛЯРНОЙ цене (price_regular — цена без акций) ──────────
+    freq_regular         = mean(changed_regular, na.rm = TRUE),                              # доля недель, когда регулярная цена изменилась > порога
+    avg_change_regular   = mean(abs(delta_regular_pct[changed_regular]), na.rm = TRUE),      # средний размер изменения регулярной цены
 
-    freq_effective       = mean(changed_effective, na.rm = TRUE),
-    avg_change_effective = mean(abs(delta_effective_pct[changed_effective]), na.rm = TRUE),
+    # ── Метрики по ЭФФЕКТИВНОЙ цене (то, что платит покупатель) ─────────────
+    freq_effective       = mean(changed_effective, na.rm = TRUE),                            # доля недель с изменением эффективной цены > порога
+    avg_change_effective = mean(abs(delta_effective_pct[changed_effective]), na.rm = TRUE),  # средний размер изменения эффективной цены (только в недели изменения)
     med_change_effective = median(abs(delta_effective_pct[changed_effective]), na.rm = TRUE),
 
-    promo_share          = mean(is_promo, na.rm = TRUE),
+    # ── Промо-метрики (акционная цена относительно регулярной) ───────────────
+    promo_share          = mean(is_promo, na.rm = TRUE),  # доля периодов с активной акцией
 
-    avg_promo_depth      = if_else(
+    avg_promo_depth      = if_else(     # (P_reg - P_eff) / P_reg при is_promo=TRUE: глубина скидки
       sum(is_promo, na.rm = TRUE) > 0,
       mean((price_regular[is_promo] - effective_price[is_promo]) /
              price_regular[is_promo], na.rm = TRUE),
       NA_real_
     ),
 
+    # ── Длина ценового спелла (по эффективной цене) ───────────────────────────
+    # spell_length_weeks: сколько недель подряд эффективная цена не менялась
     avg_spell_length     = mean(spell_length_weeks, na.rm = TRUE),
     med_spell_length     = median(spell_length_weeks, na.rm = TRUE),
 
-    volatility_effective = sd(delta_effective_pct, na.rm = TRUE),
+    volatility_effective = sd(delta_effective_pct, na.rm = TRUE),  # волатильность эффективной цены
 
     .groups = "drop"
   )
@@ -105,7 +110,8 @@ chain_summary <- stickiness %>%
 
 # ── 2.3 Красивые gt-таблицы ────────────────────────────────────────────────
 save_gt_table <- function(gt_obj, data_df, filename_stem) {
-  write_csv(data_df, file.path(PATH_TABLES, paste0(filename_stem, ".csv")))
+  # write_excel_csv добавляет UTF-8 BOM → Excel на Windows читает кириллицу корректно
+  write_excel_csv(data_df, file.path(PATH_TABLES, paste0(filename_stem, ".csv")))
   gt_obj %>% gtsave(file.path(PATH_TABLES, paste0(filename_stem, ".html")))
   message(glue("Таблица сохранена: {filename_stem}.csv + .html"))
   print(gt_obj)
@@ -237,8 +243,8 @@ p_spell <- panel %>%
   scale_fill_manual(values = CHAIN_COLOURS) +
   facet_wrap(~ store_chain, scales = "free_y") +
   labs(
-    title    = "Распределение длительности ценовых спеллов",
-    subtitle = "Сколько недель цена остаётся без изменений",
+    title    = "Распределение длительности цен. спеллов (по ЭФФЕКТИВНОЙ цене)",
+    subtitle = "Ценовой спелл = непрерывный период без изменений эффективной цены",
     x    = "Длительность спелла (недель)",
     y    = "Количество случаев",
     fill = "Сеть"
@@ -255,3 +261,124 @@ saveRDS(stickiness, file.path(PATH_PROCESSED, "stickiness_metrics.rds"))
 write_csv(stickiness, file.path(PATH_PROCESSED, "stickiness_metrics.csv"))
 
 message("stickiness_metrics сохранён для дальнейшего анализа")
+
+# ── 2.5 Гистограммы распределения частоты изменений по товарам ───────────────
+# ЧТО СМОТРИМ: как распределена freq_effective по товарам внутри каждой сети?
+# Если распределение U-образное (много 0 и много 1) → два типа товаров:
+# «стабильные» (никогда не меняют цену) и «акционные» (почти всегда на промо).
+# Пятёрочка ожидаемо более равномерна, Магнит — ближе к U-форме.
+
+message("\n[02] Строим гистограммы распределения частоты изменений...")
+
+freq_by_product <- panel %>%
+  filter(!is.na(delta_effective_pct)) %>%
+  group_by(store_chain, category_name, product_id) %>%
+  summarise(
+    freq_eff = mean(changed_effective, na.rm = TRUE),
+    freq_reg = mean(changed_regular,   na.rm = TRUE),
+    n_obs    = n(),
+    .groups  = "drop"
+  ) %>%
+  filter(n_obs >= 3)   # исключаем товары с < 3 наблюдениями
+
+# А) Facet: Пятёрочка vs Магнит — гистограмма
+p_freq_hist <- freq_by_product %>%
+  ggplot(aes(x = freq_eff, fill = store_chain)) +
+  geom_histogram(bins = 25, alpha = 0.85, colour = "white", linewidth = 0.3) +
+  scale_fill_manual(values = CHAIN_COLOURS) +
+  scale_x_continuous(labels = percent_format(accuracy = 1), limits = c(0, 1.01)) +
+  facet_wrap(~ store_chain, scales = "free_y", ncol = 2) +
+  labs(
+    title    = "Распределение частоты изменения ЭФФЕКТИВНОЙ цены по товарам",
+    subtitle = glue("Эффективная цена (акционная или регулярная) | Порог: {CHANGE_THRESHOLD * 100}%"),
+    x        = "Доля недель с изменением эффективной цены (freq_effective)",
+    y        = "Количество товаров",
+    fill     = "Сеть",
+    caption  = "Товары с < 3 наблюдениями исключены"
+  ) +
+  theme_price() +
+  theme(legend.position = "none")
+
+ggsave(file.path(PATH_PLOTS, "04_freq_hist_by_chain.png"),
+       p_freq_hist, width = 12, height = 6, dpi = 200)
+
+# Б) Плотность: обе сети вместе для сравнения формы распределения
+p_freq_density <- freq_by_product %>%
+  ggplot(aes(x = freq_eff, fill = store_chain, colour = store_chain)) +
+  geom_density(alpha = 0.30, linewidth = 1.2) +
+  scale_fill_manual(values   = CHAIN_COLOURS) +
+  scale_colour_manual(values = CHAIN_COLOURS) +
+  scale_x_continuous(labels = percent_format(accuracy = 1), limits = c(0, 1.01)) +
+  labs(
+    title    = "Плотность распределения частоты изменения эффективной цены",
+    subtitle = "Сравнение Пятёрочки и Магнита: U-образность → два типа товаров",
+    x        = "Доля недель с изменением эффективной цены",
+    y        = "Плотность вероятности",
+    fill     = "Сеть", colour = "Сеть"
+  ) +
+  theme_price()
+
+ggsave(file.path(PATH_PLOTS, "05_freq_density_combined.png"),
+       p_freq_density, width = 10, height = 6, dpi = 200)
+
+# В) Гистограммы по каждой категории — отдельная панель (facet_wrap по категории).
+# Показывает форму распределения freq_effective внутри каждой категории.
+# Две кривые на одной панели: Пятёрочка и Магнит (разные цвета).
+p_freq_hist_cat <- freq_by_product %>%
+  ggplot(aes(x = freq_eff, fill = store_chain)) +
+  geom_histogram(bins = 15, alpha = 0.75, colour = "white", linewidth = 0.2,
+                 position = "identity") +
+  scale_fill_manual(values = CHAIN_COLOURS, name = "Сеть") +
+  scale_x_continuous(labels = percent_format(accuracy = 1),
+                     limits = c(0, 1.01), breaks = c(0, 0.25, 0.5, 0.75, 1)) +
+  facet_wrap(~ category_name, scales = "free_y", ncol = 3) +
+  labs(
+    title    = "Распределение частоты изменения ЭФФЕКТИВНОЙ цены по категориям",
+    subtitle = glue("Эффективная цена (акционная или регулярная) | Порог: {CHANGE_THRESHOLD * 100}%"),
+    x       = "Частота изменения эффективной цены (доля недель)",
+    y       = "Количество товаров",
+    caption = paste0(
+      "U-образность → два типа товаров: стабильные (freq≈0) и акционные (freq≈1). ",
+      "Товары с < 3 наблюдениями исключены."
+    )
+  ) +
+  theme_price() +
+  theme(legend.position = "bottom", strip.text = element_text(size = 11, face = "bold"))
+
+ggsave(file.path(PATH_PLOTS, "06_freq_hist_by_category.png"),
+       p_freq_hist_cat, width = 16, height = 12, dpi = 180)
+
+# В2) Отдельно: регулярная цена vs эффективная — сравнение форм
+p_freq_eff_vs_reg <- freq_by_product %>%
+  pivot_longer(cols = c(freq_eff, freq_reg),
+               names_to  = "price_type",
+               values_to = "freq") %>%
+  mutate(price_type = if_else(price_type == "freq_eff",
+                              "Эффективная цена\n(акционная|регулярная)",
+                              "Регулярная цена\n(только полочная)")) %>%
+  ggplot(aes(x = freq, fill = store_chain)) +
+  geom_histogram(bins = 20, alpha = 0.75, colour = "white",
+                 linewidth = 0.2, position = "identity") +
+  scale_fill_manual(values = CHAIN_COLOURS, name = "Сеть") +
+  scale_x_continuous(labels = percent_format(accuracy = 1), limits = c(0, 1.01)) +
+  facet_grid(price_type ~ store_chain, scales = "free_y") +
+  labs(
+    title    = "Частота изменений: эффективная цена vs регулярная",
+    subtitle = paste0(
+      "Верхний ряд: эффективная (то, что платит покупатель). ",
+      "Нижний ряд: только регулярная (без акций)."
+    ),
+    x       = "Доля недель с изменением цены",
+    y       = "Количество товаров",
+    caption = glue("Порог значимого изменения: {CHANGE_THRESHOLD * 100}%")
+  ) +
+  theme_price() +
+  theme(legend.position = "none",
+        strip.text      = element_text(size = 11, face = "bold"))
+
+ggsave(file.path(PATH_PLOTS, "07_freq_eff_vs_reg.png"),
+       p_freq_eff_vs_reg, width = 12, height = 8, dpi = 180)
+
+message("  Гистограммы частоты сохранены: 04, 05, 06, 07.")
+message("=== Блок 02 завершён: описательные метрики и графики ===")
+

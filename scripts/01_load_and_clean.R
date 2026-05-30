@@ -40,16 +40,25 @@ message("Содержимое raw/:")
 print(list.files(PATH_RAW, pattern = "\\.xlsx$", full.names = FALSE))
 
 # ── Цветовая палитра и тема ───────────────────────────────────────────────────
-CHAIN_COLOURS <- c("Pyaterochka" = "#E63329", "Magnit" = "#E91E8C")
+CHAIN_COLOURS <- c("Pyaterochka" = "#C62828", "Magnit" = "#1565C0")  # красный vs синий: высокий контраст при наложении
 
-theme_price <- function() {
-  theme_minimal(base_size = 12) +
+theme_price <- function(base_size = 13) {
+  theme_minimal(base_size = base_size) +
     theme(
-      plot.title    = element_text(face = "bold", size = 14),
-      plot.subtitle = element_text(colour = "grey40"),
+      plot.title       = element_text(face = "bold", size = base_size + 5,
+                                      margin = margin(b = 6)),
+      plot.subtitle    = element_text(colour = "grey35", size = base_size + 1,
+                                      margin = margin(b = 10)),
+      plot.caption     = element_text(colour = "grey55", size = base_size - 2,
+                                      hjust = 0, margin = margin(t = 8)),
+      axis.title       = element_text(size = base_size + 1, colour = "grey20"),
+      axis.text        = element_text(size = base_size,     colour = "grey30"),
+      legend.title     = element_text(size = base_size,     face = "bold"),
+      legend.text      = element_text(size = base_size - 1),
       legend.position  = "bottom",
+      strip.text       = element_text(face = "bold", size = base_size + 1),
       panel.grid.minor = element_blank(),
-      strip.text = element_text(face = "bold")
+      panel.grid.major = element_line(colour = "grey92")
     )
 }
 theme_set(theme_price())
@@ -153,7 +162,7 @@ panel <- raw %>%
   ) %>%
   # Нормализация ориентации колонок цен (работает для обеих сетей).
   # Инвариант после этого блока: price_regular = обычная цена,
-  #                               price_discount = акционная цена (< price_regular) или NA.
+  # price_discount = акционная цена (< price_regular) или NA.
   # У Магнита в исходных данных колонки перевёрнуты: price_regular хранит
   # фактическую (возможно акционную) цену, а price_discount — зачёркнутую
   # оригинальную (выше). У Пятёрочки ориентация правильная, но проверка
@@ -167,6 +176,12 @@ panel <- raw %>%
   ) %>%
   select(-.tmp_reg, -.tmp_disc, -.inverted) %>%
   mutate(
+    # ── Три ценовые концепции, используемые во всём анализе ──────────────────
+    # price_regular  : цена на полке без скидки (стандартная, «зачёркнутая» при акции)
+    # price_discount : акционная цена (ниже регулярной); NA если акции нет
+    # effective_price: то, что ФАКТИЧЕСКИ ПЛАТИТ ПОКУПАТЕЛЬ:
+    #                  = price_discount  если is_promo=TRUE (акция активна)
+    #                  = price_regular   иначе
     effective_price = coalesce(
       if_else(!is.na(price_discount) & price_discount < price_regular & price_discount > 0,
               price_discount, NA_real_),

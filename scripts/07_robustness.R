@@ -14,8 +14,13 @@ reg_data_regular <- panel %>%
   left_join(cat_group_map, by = "category_id") %>%   # cat_group_map из script 06
   filter(!is.na(delta_regular_pct)) %>%
   mutate(
+    # dln_regular = log(P_reg_t / P_reg_{t-1}) — только РЕГУЛЯРНАЯ цена (без акций).
+    # Промо-периоды включены, но в зависимой переменной отражается изменение
+    # цены на полке (price_regular), а не то, сколько платит покупатель.
     dln_regular = log(price_regular / lag_regular),
     is_magnit   = as.integer(store_chain == "Magnit"),
+    # is_promo_i здесь НЕ включается в модель: RC1 тестирует только динамику
+    # регулярных цен вне зависимости от промо-активности
     week_fct    = factor(week),
     cat_fct     = factor(cat_group),   # кросс-цепочечный ключ (как в script 06)
     store_fct   = factor(store_code)
@@ -42,6 +47,7 @@ reg_data_rc2 <- panel %>%
   left_join(cat_group_map, by = "category_id") %>%   # cat_group_map из script 06
   filter(!is.na(delta_effective_pct)) %>%
   mutate(
+    # RC2 использует ту же ЭФФЕКТИВНУЮ цену, что и M1, но с более мягким порогом
     dln_effective   = log(effective_price / lag_effective),
     is_magnit       = as.integer(store_chain == "Magnit"),
     is_promo_i      = as.integer(is_promo),
@@ -64,11 +70,45 @@ m_rc2 <- feols(
 # Используем reg_data из script 06 (с cat_group как FE) — уже очищен корректно.
 message("  [RC-3] Без выбросов (|ΔP| > 50%)...")
 
+# RC3 также использует ЭФФЕКТИВНУЮ цену — та же dln_effective, что в M1,
+# но без наблюдений с экстремальными изменениями (> ±50%)
 m_rc3 <- feols(
   dln_effective ~ is_magnit + is_promo_i | cat_fct + week_fct,
   data    = reg_data %>% filter(abs(dln_effective) <= 0.5),
   cluster = ~store_fct
 )
+
+# ── 7.3b Диагностика выбросов RC3 ────────────────────────────────────────────
+# ОТКУДА БЕРУТСЯ ВЫБРОСЫ |Δln(P)| > 50%?
+# 1. Ошибки сбора данных: парсинг страницы поймал акционный баннер вместо цены.
+# 2. Товары при уценке/списании (напр. скоропорт за день до истечения срока).
+# 3. Редкие промо >50%: «-60% на всё молоко» — реальная, но нетипичная акция.
+# 4. Ввод/вывод товара: цена появляется после долгого перерыва с другим значением.
+# Доля таких наблюдений мала, но они сильно влияют на OLS (квадрат отклонения).
+
+n_total    <- nrow(reg_data)
+n_outliers <- sum(abs(reg_data$dln_effective) > 0.5)
+pct_out    <- round(n_outliers / n_total * 100, 2)
+
+message(glue(
+  "  RC3 выбросы: {n_outliers} из {n_total} ({pct_out}%) наблюдений исключено (|Δln P| > 50%)"
+))
+
+# Профиль выбросов: где они сконцентрированы?
+outlier_profile <- reg_data %>%
+  filter(abs(dln_effective) > 0.5) %>%
+  group_by(store_chain, cat_group) %>%
+  summarise(
+    n_obs        = n(),
+    avg_abs_chg  = mean(abs(dln_effective)),
+    max_abs_chg  = max(abs(dln_effective)),
+    pct_promo    = mean(is_promo_i),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(n_obs))
+
+write_excel_csv(outlier_profile, file.path(PATH_TABLES, "11_outlier_profile.csv"))
+message("  Профиль выбросов сохранён: 11_outlier_profile.csv")
 
 # ── 7.4 Сводная таблица robustness ────────────────────────────────────────────
 # КАК ЧИТАТЬ РЕЗУЛЬТАТ: если β(is_magnit) и β(is_promo_i) сохраняют знак и уровень
@@ -87,34 +127,56 @@ rc_coefs <- bind_rows(
 ) %>%
   filter(term %in% c("is_magnit", "is_promo_i"))
 
-write_csv(rc_coefs, file.path(PATH_TABLES, "11_robustness_coefs.csv"))
+write_excel_csv(rc_coefs, file.path(PATH_TABLES, "11_robustness_coefs.csv"))
 
-# График robustness: коэффициент при Magnit
-p_rc <- rc_coefs %>%
-  mutate(
-    ci_lo   = estimate - 1.96 * std_error,
-    ci_hi   = estimate + 1.96 * std_error,
-    sig     = p_value < 0.05,
-    term_ru = if_else(term == "is_magnit", "Magnit (β)", "Промо (β)")
-  ) %>%
-  ggplot(aes(x = estimate, y = model, colour = sig)) +
-  geom_vline(xintercept = 0, linetype = "dashed", colour = "grey50") +
-  geom_pointrange(aes(xmin = ci_lo, xmax = ci_hi), size = 0.7) +
-  scale_colour_manual(
-    values = c("TRUE" = "#d73027", "FALSE" = "grey60"),
-    labels = c("TRUE" = "p < 0.05", "FALSE" = "p ≥ 0.05"),
-    name   = NULL
-  ) +
-  facet_wrap(~term_ru, scales = "free_x") +
-  labs(
-    title    = "Проверки устойчивости: коэффициенты основных регрессоров",
-    subtitle = "Сравнение оценок β (±95% ДИ) по спецификациям",
-    x        = "Оценка β",
-    y        = NULL
-  )
+# ── График robustness: ОТДЕЛЬНЫЙ файл на каждый коэффициент ──────────────────
+# Каждый график — один коэффициент, все 4 спецификации на оси Y.
+# Нет перекрытий, нет dodging, читается сразу.
 
-ggsave(file.path(PATH_PLOTS, "10_robustness_coef_plot.png"),
-       p_rc, width = 12, height = 5, dpi = 150)
+make_rc_plot <- function(data, term_filter, title_text, subtitle_text) {
+  data %>%
+    filter(term == term_filter) %>%
+    mutate(
+      ci_lo = estimate - 1.96 * std_error,
+      ci_hi = estimate + 1.96 * std_error,
+      sig   = p_value < 0.05,
+      stars = case_when(p_value < 0.01 ~ "***", p_value < 0.05 ~ "**",
+                        p_value < 0.10 ~ "*",   TRUE ~ "")
+    ) %>%
+    ggplot(aes(x = estimate, y = reorder(model, estimate), colour = sig)) +
+    geom_vline(xintercept = 0, linetype = "dashed", colour = "grey50", linewidth = 0.8) +
+    geom_pointrange(aes(xmin = ci_lo, xmax = ci_hi), size = 0.9, linewidth = 1.1) +
+    geom_text(aes(label = glue("{round(estimate, 4)}{stars}")),
+              hjust = -0.15, size = 4.2, fontface = "bold") +
+    scale_colour_manual(values = c("TRUE" = "#d73027", "FALSE" = "grey55"),
+                        labels  = c("TRUE" = "p < 0.05", "FALSE" = "p ≥ 0.05"),
+                        name    = NULL) +
+    scale_x_continuous(expand = expansion(mult = c(0.05, 0.30))) +
+    labs(title = title_text, subtitle = subtitle_text,
+         x = "Оценка β (±95% ДИ)", y = NULL) +
+    theme_price() +
+    theme(legend.position = "bottom")
+}
+
+# 10a: β(Магнит) — M1, RC1, RC2, RC3
+p_rc_mag <- make_rc_plot(
+  rc_coefs, "is_magnit",
+  title_text    = "β(Магнит): устойчивость к выбору спецификации",
+  subtitle_text = "Зависимая переменная — Δln(P) | M1: эффективная; RC1: регулярная; RC2/RC3: эффективная"
+)
+ggsave(file.path(PATH_PLOTS, "18_rc_magnit.png"),
+       p_rc_mag, width = 10, height = 5, dpi = 180)
+
+# 10b: β(Промо) — M1, RC2, RC3 (RC1 не включает промо)
+p_rc_prm <- make_rc_plot(
+  rc_coefs, "is_promo_i",
+  title_text    = "β(Промо): устойчивость к выбору спецификации",
+  subtitle_text = "Зависимая переменная — Δln(эффективной цены) | RC1 исключён (нет промо-переменной)"
+)
+ggsave(file.path(PATH_PLOTS, "19_rc_promo.png"),
+       p_rc_prm, width = 10, height = 5, dpi = 180)
+
+message("  RC-plots: 18_rc_magnit.png, 19_rc_promo.png")
 
 # gt-таблица сравнения robustness
 gt_rc <- rc_coefs %>%
@@ -152,3 +214,5 @@ save_gt_table(gt_rc, rc_coefs %>% select(model, term, estimate, std_error, p_val
               "11_robustness_table")
 
 message("  Robustness checks завершены.")
+message(glue("  Выбросы RC3: {n_outliers} наблюдений ({pct_out}%) с |Δln P| > 50% — см. 11_outlier_profile.csv"))
+message("=== Блок 07 завершён: robustness checks и диагностика выбросов ===")
