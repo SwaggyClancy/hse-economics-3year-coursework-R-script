@@ -26,7 +26,7 @@ make_single_coef_plot <- function(data, title_text, subtitle_text = "",
               hjust = -0.15, size = 4.2, fontface = "bold") +
     scale_colour_manual(values = c("TRUE" = "#d73027", "FALSE" = "grey55"),
                         labels  = c("TRUE" = "p < 0.05", "FALSE" = "p ≥ 0.05"),
-                        name    = NULL) +
+                        name    = NULL, drop = FALSE) +
     scale_x_continuous(expand = expansion(mult = c(0.05, 0.30))) +
     labs(title = title_text, subtitle = subtitle_text, x = x_label, y = NULL) +
     theme_price() +

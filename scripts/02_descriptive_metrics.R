@@ -304,6 +304,7 @@ ggsave(file.path(PATH_PLOTS, "04_freq_hist_by_chain.png"),
 
 # Б) Плотность: обе сети вместе для сравнения формы распределения
 p_freq_density <- freq_by_product %>%
+  mutate(store_chain = factor(store_chain, levels = c("Pyaterochka", "Magnit"))) %>%
   ggplot(aes(x = freq_eff, fill = store_chain, colour = store_chain)) +
   geom_density(alpha = 0.30, linewidth = 1.2) +
   scale_fill_manual(values   = CHAIN_COLOURS) +
@@ -325,6 +326,7 @@ ggsave(file.path(PATH_PLOTS, "05_freq_density_combined.png"),
 # Показывает форму распределения freq_effective внутри каждой категории.
 # Две кривые на одной панели: Пятёрочка и Магнит (разные цвета).
 p_freq_hist_cat <- freq_by_product %>%
+  mutate(store_chain = factor(store_chain, levels = c("Pyaterochka", "Magnit"))) %>%
   ggplot(aes(x = freq_eff, fill = store_chain)) +
   geom_histogram(bins = 15, alpha = 0.75, colour = "white", linewidth = 0.2,
                  position = "identity") +
@@ -380,5 +382,83 @@ ggsave(file.path(PATH_PLOTS, "07_freq_eff_vs_reg.png"),
        p_freq_eff_vs_reg, width = 12, height = 8, dpi = 180)
 
 message("  Гистограммы частоты сохранены: 04, 05, 06, 07.")
+
+# ── 2.6 Распределение изменений цен в РУБЛЯХ + частота РЕГУЛЯРНОЙ цены ────────
+# ЧТО СМОТРИМ: не только как часто меняются цены, но и на сколько рублей.
+# Позволяет сравнить «магнитуду» ценовых решений независимо от базовой цены товара.
+message("\n[02] Строим графики изменений цен в рублях и по регулярной цене...")
+
+# Базовый датафрейм с абсолютными изменениями в рублях
+price_delta_rub <- panel %>%
+  filter(!is.na(lag_effective), lag_effective > 0,
+         !is.na(lag_regular),   lag_regular > 0) %>%
+  mutate(
+    delta_eff_rub = effective_price - lag_effective,
+    delta_reg_rub = price_regular   - lag_regular,
+    store_chain   = factor(store_chain, levels = c("Pyaterochka", "Magnit"))
+  )
+
+# Г) Размер изменений ЭФФЕКТИВНОЙ цены в рублях (только периоды с изменением)
+p_delta_rub_eff <- price_delta_rub %>%
+  filter(changed_effective, abs(delta_eff_rub) <= 200) %>%
+  ggplot(aes(x = delta_eff_rub, fill = store_chain)) +
+  geom_histogram(binwidth = 5, position = "identity",
+                 alpha = 0.75, colour = "white", linewidth = 0.2) +
+  scale_fill_manual(values = CHAIN_COLOURS) +
+  scale_x_continuous(breaks = seq(-200, 200, by = 25),
+                     labels = function(x) paste0(x, "₽")) +
+  facet_wrap(~ store_chain, scales = "free_y", ncol = 2) +
+  labs(
+    title    = "Размер изменений ЭФФЕКТИВНОЙ цены (в рублях)",
+    subtitle = glue("Только периоды с |ΔP_эфф| > {CHANGE_THRESHOLD*100}% | Шаг: 5 руб. | Выбросы >±200 руб. исключены"),
+    x        = "Изменение эффективной цены, руб.",
+    y        = "Количество наблюдений"
+  ) +
+  theme_price() + theme(legend.position = "none")
+
+ggsave(file.path(PATH_PLOTS, "07b_price_delta_rub_effective.png"),
+       p_delta_rub_eff, width = 12, height = 6, dpi = 200)
+
+# Д) Размер изменений РЕГУЛЯРНОЙ цены в рублях
+p_delta_rub_reg <- price_delta_rub %>%
+  filter(changed_regular, abs(delta_reg_rub) <= 200) %>%
+  ggplot(aes(x = delta_reg_rub, fill = store_chain)) +
+  geom_histogram(binwidth = 5, position = "identity",
+                 alpha = 0.75, colour = "white", linewidth = 0.2) +
+  scale_fill_manual(values = CHAIN_COLOURS) +
+  scale_x_continuous(breaks = seq(-200, 200, by = 25),
+                     labels = function(x) paste0(x, "₽")) +
+  facet_wrap(~ store_chain, scales = "free_y", ncol = 2) +
+  labs(
+    title    = "Размер изменений РЕГУЛЯРНОЙ цены (в рублях)",
+    subtitle = glue("Только периоды с |ΔP_рег| > {CHANGE_THRESHOLD*100}% | Шаг: 5 руб. | Выбросы >±200 руб. исключены"),
+    x        = "Изменение регулярной цены, руб.",
+    y        = "Количество наблюдений"
+  ) +
+  theme_price() + theme(legend.position = "none")
+
+ggsave(file.path(PATH_PLOTS, "07c_price_delta_rub_regular.png"),
+       p_delta_rub_reg, width = 12, height = 6, dpi = 200)
+
+# Е) Частота изменения РЕГУЛЯРНОЙ цены по товарам (аналог 04_, но для регулярной)
+p_freq_reg_hist <- freq_by_product %>%
+  mutate(store_chain = factor(store_chain, levels = c("Pyaterochka", "Magnit"))) %>%
+  ggplot(aes(x = freq_reg, fill = store_chain)) +
+  geom_histogram(bins = 25, alpha = 0.85, colour = "white", linewidth = 0.3) +
+  scale_fill_manual(values = CHAIN_COLOURS) +
+  scale_x_continuous(labels = percent_format(accuracy = 1), limits = c(0, 1.01)) +
+  facet_wrap(~ store_chain, scales = "free_y", ncol = 2) +
+  labs(
+    title    = "Распределение частоты изменения РЕГУЛЯРНОЙ цены по товарам",
+    subtitle = glue("Только полочная цена (без акций) | Порог: {CHANGE_THRESHOLD * 100}%"),
+    x        = "Доля недель с изменением регулярной цены (freq_regular)",
+    y        = "Количество товаров"
+  ) +
+  theme_price() + theme(legend.position = "none")
+
+ggsave(file.path(PATH_PLOTS, "07d_freq_regular_by_chain.png"),
+       p_freq_reg_hist, width = 12, height = 6, dpi = 200)
+
+message("  Дополнительные графики сохранены: 07b (руб. эфф.), 07c (руб. рег.), 07d (частота рег.)")
 message("=== Блок 02 завершён: описательные метрики и графики ===")
 

@@ -417,7 +417,7 @@ html_out <- glue('<!doctype html>
   <h2><span class="section-number">01</span>Описательные метрики ценовой липкости</h2>
   <div class="section-desc">
     Таблицы: <code>01_chain_stickiness.csv/.html</code> &middot; <code>02_category_stickiness.csv/.html</code>
-    &nbsp;|&nbsp; Графики: <code>01</code>&ndash;<code>07_*.png</code> (частота, спеллы, гистограммы эффективной цены)
+    &nbsp;|&nbsp; Графики: <code>01</code>&ndash;<code>07d_*.png</code> (частота, спеллы, гистограммы, рублёвые изменения, регулярная цена)
   </div>
   <div class="method-box">
     <strong>Методология.</strong> Для каждой пары (товар, неделя):
@@ -514,7 +514,21 @@ html_out <- glue('<!doctype html>
   </div>
   <div class="fig-wrap">
     <img src="plots/06_freq_hist_by_category.png" alt="Гистограммы по категориям" loading="lazy"/>
-    <div class="fig-caption"><strong>График 06</strong> &mdash; Гистограмма частоты изменений <strong>эффективной цены</strong> по каждой категории отдельно. Красный = Пятёрочка, розовый = Магнит.</div>
+    <div class="fig-caption"><strong>График 06</strong> &mdash; Гистограмма частоты изменений <strong>эффективной цены</strong> по каждой категории. Тёмно-красный = Пятёрочка, синий = Магнит (поверх).</div>
+  </div>
+  <div class="fig-grid">
+    <div class="fig-wrap">
+      <img src="plots/07b_price_delta_rub_effective.png" alt="Рублёвые изменения эфф. цены" loading="lazy"/>
+      <div class="fig-caption"><strong>График 07b</strong> &mdash; Размер изменений <strong>эффективной цены</strong> в рублях. Только периоды с фактическим изменением, шаг 5 руб.</div>
+    </div>
+    <div class="fig-wrap">
+      <img src="plots/07c_price_delta_rub_regular.png" alt="Рублёвые изменения рег. цены" loading="lazy"/>
+      <div class="fig-caption"><strong>График 07c</strong> &mdash; Размер изменений <strong>регулярной (полочной) цены</strong> в рублях. Сравни с 07b: насколько амплитуда акций крупнее.</div>
+    </div>
+  </div>
+  <div class="fig-wrap">
+    <img src="plots/07d_freq_regular_by_chain.png" alt="Частота рег. цены" loading="lazy"/>
+    <div class="fig-caption"><strong>График 07d</strong> &mdash; Распределение частоты изменений <strong>регулярной (полочной) цены</strong> по товарам. Сравни с графиком 04: у Магнита регулярные цены гораздо стабильнее.</div>
   </div>
 </div>
 
@@ -756,19 +770,9 @@ html_out <- glue('<!doctype html>
     </table>
   </div>
 
-  <div class="fig-wrap">
-    <img src="plots/14_coef_m1.png" alt="Коэффициентный граф M1" loading="lazy"/>
-    <div class="fig-caption"><strong>График 14</strong> &mdash; M1: оба коэффициента с 95% ДИ. Зависимая переменная: &Delta;ln(<strong>эффективной</strong> цены).</div>
-  </div>
-  <div class="fig-grid">
-    <div class="fig-wrap">
-      <img src="plots/15_coef_magnit.png" alt="β Магнит" loading="lazy"/>
-      <div class="fig-caption"><strong>График 15</strong> &mdash; &beta;(Магнит) из M1: на сколько % отличается динамика <strong>эффективной</strong> цены в Магните от Пятёрочки.</div>
-    </div>
-    <div class="fig-wrap">
-      <img src="plots/16_coef_promo.png" alt="β Промо сравнение" loading="lazy"/>
-      <div class="fig-caption"><strong>График 16</strong> &mdash; &beta;(Промо) по трём спецификациям: насколько промо снижает <strong>эффективную</strong> цену.</div>
-    </div>
+  <div class="callout callout-note">
+    <div class="callout-icon">&#x1F4CA;</div>
+    <div>Коэффициентные графики (14–16) доступны в <code>output/plots/</code> для дополнительного изучения.</div>
   </div>
 </div>
 
@@ -800,15 +804,9 @@ html_out <- glue('<!doctype html>
 
   {rc_consistency}
 
-  <div class="fig-grid">
-    <div class="fig-wrap">
-      <img src="plots/18_rc_magnit.png" alt="RC β Магнит" loading="lazy"/>
-      <div class="fig-caption"><strong>График 18</strong> &mdash; &beta;(Магнит) по спецификациям. RC1: <strong>регулярная</strong> цена; RC2/RC3: <strong>эффективная</strong>.</div>
-    </div>
-    <div class="fig-wrap">
-      <img src="plots/19_rc_promo.png" alt="RC β Промо" loading="lazy"/>
-      <div class="fig-caption"><strong>График 19</strong> &mdash; &beta;(Промо) по спецификациям. Зависимая: &Delta;ln(<strong>эффективной</strong> цены). RC1 исключён (нет is_promo).</div>
-    </div>
+  <div class="callout callout-note">
+    <div class="callout-icon">&#x1F4CA;</div>
+    <div>Коэффициентные графики (18–19) доступны в <code>output/plots/</code>.</div>
   </div>
 </div>
 
@@ -833,39 +831,13 @@ html_out <- glue('<!doctype html>
     инерция или торможение ценовых изменений?
   </div>
 
-  <div class="fig-grid">
-    <div class="fig-wrap">
-      <img src="plots/20a_lpm_magnit.png" alt="LPM β Магнит" loading="lazy"/>
-      <div class="fig-caption"><strong>График 20a &middot; LPM — β(Магнит)</strong> &mdash; Разница вероятности изменения эффективной цены между сетями (LPM-M1).</div>
-    </div>
-    <div class="fig-wrap">
-      <img src="plots/20b_lpm_promo.png" alt="LPM β Промо" loading="lazy"/>
-      <div class="fig-caption"><strong>График 20b &middot; LPM — β(Промо)</strong> &mdash; На сколько п.п. акция повышает вероятность изменения цены (три спецификации LPM).</div>
-    </div>
-  </div>
-  <div class="fig-grid">
-    <div class="fig-wrap">
-      <img src="plots/21a_granger_pya.png" alt="Granger: Пятёрочка" loading="lazy"/>
-      <div class="fig-caption"><strong>График 21a &middot; Granger → Пятёрочка</strong> &mdash; Значим ли лаг Магнита для предсказания частоты изменений Пятёрочки?</div>
-    </div>
-    <div class="fig-wrap">
-      <img src="plots/21b_granger_mag.png" alt="Granger: Магнит" loading="lazy"/>
-      <div class="fig-caption"><strong>График 21b &middot; Granger → Магнит</strong> &mdash; Значим ли лаг Пятёрочки для предсказания частоты изменений Магнита?</div>
-    </div>
-  </div>
-  <div class="fig-grid">
-    <div class="fig-wrap">
-      <img src="plots/22a_ar_lag.png" alt="AR(1) лаг" loading="lazy"/>
-      <div class="fig-caption"><strong>График 22a &middot; AR(1) — ρ</strong> &mdash; ρ &lt; 0 = ценовое торможение (пауза после изменения); ρ &gt; 0 = инерция.</div>
-    </div>
-    <div class="fig-wrap">
-      <img src="plots/22b_ar_promo.png" alt="AR(1) промо" loading="lazy"/>
-      <div class="fig-caption"><strong>График 22b &middot; AR(1) — β(Промо)</strong> &mdash; Вклад акции сверх авторегрессионного эффекта.</div>
-    </div>
+  <div class="callout callout-note">
+    <div class="callout-icon">&#x1F4CA;</div>
+    <div>Коэффициентные графики LPM/Granger/AR (20a–22b) доступны в <code>output/plots/</code>.</div>
   </div>
   <div class="fig-wrap">
     <img src="plots/23_rf_importance.png" alt="Random Forest важность" loading="lazy"/>
-    <div class="fig-caption"><strong>График 23 &middot; Random Forest</strong> &mdash; Важность групп переменных для предсказания изменения <strong>эффективной</strong> цены.</div>
+    <div class="fig-caption"><strong>График 23 &middot; Random Forest</strong> &mdash; Важность групп переменных для предсказания изменения <strong>эффективной</strong> цены. Доминирование FE-групп подтверждает: структурные факторы объясняют большую часть вероятности изменения цены.</div>
   </div>
 </div>
 
